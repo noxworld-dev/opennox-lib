@@ -9,7 +9,7 @@ require (
 	github.com/noxworld-dev/noxcrypt v0.0.0-20220321183618-46f42bc13bf4
 	github.com/spf13/cobra v1.4.0
 	github.com/stretchr/testify v1.7.1
-	github.com/veandco/go-sdl2 v0.4.17
+	github.com/veandco/go-sdl2 v0.4.10
 	github.com/yuin/gopher-lua v0.0.0-20210529063254-f4c35e4016d9
 	golang.org/x/image v0.0.0-20220321031419-a8550c1d254a
 	golang.org/x/sys v0.0.0-20220319134239-a9b59b0215f8
