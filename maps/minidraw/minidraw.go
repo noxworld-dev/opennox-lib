@@ -19,7 +19,10 @@ func MinimapGray(m *maps.Map) *image.Gray {
 	r := m.GridBoundingBox()
 	img := image.NewGray(r)
 	fillImage(img, color.Black)
-	for _, w := range m.Walls() {
+	if m.Walls == nil {
+		return img
+	}
+	for _, w := range m.Walls.Walls {
 		p := w.Pos
 		mm := float32(w.Minimap) / 255
 		const base = 64
@@ -56,8 +59,11 @@ func MinimapRGBAFunc(m *maps.Map, bg color.Color, fnc func(w *maps.Wall) color.R
 	if bg != nil && bg != color.Transparent {
 		fillImage(img, bg)
 	}
-	for _, w := range m.Walls() {
-		img.SetRGBA(int(w.Pos.X), int(w.Pos.Y), fnc(w))
+	if m.Walls == nil {
+		return img
+	}
+	for _, w := range m.Walls.Walls {
+		img.SetRGBA(int(w.Pos.X), int(w.Pos.Y), fnc(&w))
 	}
 	return img
 }

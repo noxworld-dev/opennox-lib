@@ -184,7 +184,13 @@ func (r *Reader) ReadInfo() (*Info, error) {
 	} else if sect != "MapInfo" {
 		return nil, fmt.Errorf("unexpected section: %q", sect)
 	}
-	err = r.readMapInfo()
+	data, err := io.ReadAll(r.r)
+	if err != nil {
+		return nil, err
+	}
+	if err = r.m.Info.UnmarshalBinary(data); err != nil {
+		return nil, err
+	}
 	return r.Info(), err
 }
 
@@ -218,303 +224,70 @@ func (r *Reader) ReadSections() error {
 		} else if err != nil {
 			return err
 		}
+		data, err := io.ReadAll(r.r)
+		if err != nil {
+			return err
+		}
 		switch sect {
 		case "MapInfo":
-			err = r.readMapInfo()
-		case "WallMap":
-			err = r.readWallMap()
-		case "FloorMap":
-			err = r.readFloorMap()
-		case "ScriptObject":
-			err = r.readScript()
-		case "ScriptData":
-			err = r.readScriptData()
-		default:
-			data, err := io.ReadAll(r.r)
-			if err != nil {
+			if err := r.m.Info.UnmarshalBinary(data); err != nil {
 				return err
 			}
-			r.m.Unknown = append(r.m.Unknown, UnknownSect{
+		case "MapIntro":
+			r.m.Intro = new(MapIntro)
+			if err := r.m.Intro.UnmarshalBinary(data); err != nil {
+				return err
+			}
+		case "AmbientData":
+			r.m.Ambient = new(AmbientData)
+			if err := r.m.Ambient.UnmarshalBinary(data); err != nil {
+				return err
+			}
+		case "WallMap":
+			r.m.Walls = new(WallMap)
+			if err := r.m.Walls.UnmarshalBinary(data); err != nil {
+				return err
+			}
+		case "FloorMap":
+			r.m.Floor = new(FloorMap)
+			if err := r.m.Floor.UnmarshalBinary(data); err != nil {
+				return err
+			}
+		case "ScriptObject":
+			r.m.Script = new(Script)
+			if err := r.m.Script.UnmarshalBinary(data); err != nil {
+				return err
+			}
+		case "ScriptData":
+			r.m.ScriptData = new(ScriptData)
+			if err := r.m.ScriptData.UnmarshalBinary(data); err != nil {
+				return err
+			}
+		default:
+			r.m.Unknown = append(r.m.Unknown, RawSection{
 				Name: sect,
 				Data: data,
 			})
 		}
-		if err != nil {
-			return err
-		}
 	}
 }
 
-func (r *Reader) readMapInfo() error {
-	vers := r.readU16()
-	if err := r.error(); err != nil {
-		return fmt.Errorf("cannot read info version: %w", err)
-	}
-	r.m.Info = Info{Format: int(vers)}
-	if vers > 3 {
-		return fmt.Errorf("unsupported version: %d", vers)
-	}
-	if vers >= 1 {
-		for _, f := range []struct {
-			p   *string
-			max int
-		}{
-			{&r.m.Info.Summary, 64},
-			{&r.m.Info.Description, 512},
-			{&r.m.Info.Version, 16},
-			{&r.m.Info.Author, 64},
-			{&r.m.Info.Email, 192},
-			{&r.m.Info.Author2, 64},
-			{&r.m.Info.Email2, 192},
-			{&r.m.Info.Field7, 128},
-			{&r.m.Info.Copyright, 128},
-			{&r.m.Info.Date, 32},
-		} {
-			s := r.readStringFixed(f.max)
-			if err := r.error(); err != nil {
-				return err
-			}
-			*f.p = s
-		}
-		r.m.Info.Flags = r.readU32()
-		if err := r.error(); err != nil {
-			return fmt.Errorf("cannot read info: %w", err)
-		}
-		if vers == 2 {
-			r.m.Info.MinPlayers = r.readU8()
-			r.m.Info.MaxPlayers = r.readU8()
-			if err := r.error(); err != nil {
-				return fmt.Errorf("cannot read info: %w", err)
-			}
-		} else {
-			r.m.Info.MinPlayers = 2
-			r.m.Info.MaxPlayers = 16
-		}
-	}
-	if vers < 3 {
-		return nil
-	}
-	r.m.Info.QuestIntro = r.readString8()
-	r.m.Info.QuestGraphics = r.readString8()
-	if err := r.error(); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (r *Reader) readMapGrid() (*gridData, error) {
-	grid := new(gridData)
-	grid.prefix = r.readU16()
-	grid.var1 = r.readU32()
-	grid.var2 = r.readU32()
-	grid.var3 = r.readU32()
-	grid.var4 = r.readU32()
-	if err := r.error(); err != nil {
-		return nil, err
-	}
-	return grid, nil
-}
-
-func (r *Reader) readWallMap() error {
-	grid, err := r.readMapGrid()
-	if err != nil {
-		return err
-	}
-	r.m.walls = &wallMap{
-		grid: *grid,
-		loc:  make(map[WallPos]*Wall),
-	}
+func (r *Reader) ReadSectionsRaw() ([]RawSection, error) {
+	var out []RawSection
 	for {
-		w, err := r.readWall()
-		if err != nil {
-			return err
-		} else if w == nil {
-			break
+		sect, err := r.nextSection()
+		if err == io.EOF {
+			return out, nil
+		} else if err != nil {
+			return out, err
 		}
-		r.m.walls.list = append(r.m.walls.list, w)
-		r.m.walls.loc[w.Pos] = w
-	}
-	return nil
-}
-
-func (r *Reader) readWall() (*Wall, error) {
-	x := r.readU8()
-	if err := r.error(); err != nil {
-		return nil, err
-	} else if x == 0xff {
-		return nil, nil
-	}
-	y := r.readU8()
-	if err := r.error(); err != nil {
-		return nil, err
-	} else if y == 0xff {
-		return nil, nil
-	}
-	w := &Wall{Pos: WallPos{X: x, Y: y}}
-	w.Dir = r.readU8()
-	w.Dir &= 0x7f // TODO: check in the engine
-	w.Material = r.readU8()
-	w.Variant = r.readU8()
-	w.Minimap = r.readU8()
-	w.Modified = r.readU8()
-	if err := r.error(); err != nil {
-		return nil, err
-	}
-	return w, nil
-}
-
-type FloorPos struct {
-	X, Y uint16
-}
-
-type floorMap struct {
-	grid gridData
-}
-
-func (r *Reader) readFloorMap() error {
-	grid, err := r.readMapGrid()
-	if err != nil {
-		return err
-	} else if grid.prefix <= 3 {
-		return fmt.Errorf("unsupported floor map: 0x%x", grid.prefix)
-	}
-	r.m.floor = &floorMap{
-		grid: *grid,
-	}
-	for {
-		tl, tr, err := r.readTilePair()
+		data, err := io.ReadAll(r.r)
 		if err != nil {
-			return err
-		} else if tl == nil && tr == nil {
-			break
+			return out, err
+		}
+		out = append(out, RawSection{Name: sect, Data: data})
+		if err != nil {
+			return out, err
 		}
 	}
-	return nil
-}
-
-type Edge struct {
-	Image   byte
-	Variant uint16
-	Edge    byte
-	Dir     byte
-}
-
-func (r *Reader) readEdge() (*Edge, error) {
-	e := new(Edge)
-	e.Image = r.readU8()
-	e.Variant = r.readU16()
-	e.Edge = r.readU8()
-	e.Dir = r.readU8()
-	if err := r.error(); err != nil {
-		return nil, err
-	}
-	return e, nil
-}
-
-type Tile struct {
-	Pos     FloorPos
-	Image   byte
-	Variant uint16
-	Field4  uint16
-	Edges   []*Edge
-}
-
-func (r *Reader) readTile() (*Tile, error) {
-	t := new(Tile)
-	t.Image = r.readU8()
-	t.Variant = r.readU16()
-	// TODO: check in the engine what this is
-	t.Field4 = r.readU16()
-	n := r.readU8()
-	if err := r.error(); err != nil {
-		return nil, err
-	}
-	t.Edges = make([]*Edge, 0, n)
-	for i := 0; i < int(n); i++ {
-		e, err := r.readEdge()
-		if err != nil {
-			return nil, err
-		}
-		t.Edges = append(t.Edges, e)
-	}
-	return t, nil
-}
-
-func (r *Reader) readTilePair() (tl, tr *Tile, _ error) {
-	x := r.readU8()
-	if err := r.error(); err != nil {
-		return nil, nil, err
-	} else if x == 0xff {
-		return nil, nil, nil
-	}
-	y := r.readU8()
-	if err := r.error(); err != nil {
-		return nil, nil, err
-	} else if y == 0xff {
-		return nil, nil, nil
-	}
-	hasR := x&0x80 != 0
-	hasL := y&0x80 != 0
-	x &= 0x7c
-	y &= 0x7c
-	if hasR {
-		var err error
-		tr, err = r.readTile()
-		if err != nil {
-			return nil, nil, err
-		}
-		tr.Pos = FloorPos{X: 2*uint16(x) + 1, Y: 2*uint16(y) - 1}
-	}
-	if hasL {
-		var err error
-		tl, err = r.readTile()
-		if err != nil {
-			return nil, nil, err
-		}
-		tl.Pos = FloorPos{X: 2 * uint16(x), Y: 2 * uint16(y)}
-	}
-	if !hasL && !hasR {
-		return nil, nil, errors.New("invalid tile pair flags")
-	}
-	return tl, tr, nil
-}
-
-func (r *Reader) readScript() error {
-	vers := int16(r.readU16())
-	if err := r.error(); err != nil {
-		return err
-	} else if vers != 1 {
-		return fmt.Errorf("unsupported version of script data section: %d", vers)
-	}
-	sz := r.readU32()
-	if err := r.error(); err != nil {
-		return err
-	}
-	data := make([]byte, sz)
-	_, err := io.ReadFull(r.r, data)
-	if err != nil {
-		return err
-	}
-	r.m.Script = &Script{Data: data}
-	return nil
-}
-
-func (r *Reader) readScriptData() error {
-	vers := r.readU16()
-	if err := r.error(); err != nil {
-		return err
-	} else if vers != 1 {
-		return fmt.Errorf("unsupported version of script data section: %d", vers)
-	}
-	has := r.readU8() != 0
-	if !has {
-		return r.error()
-	}
-	data, err := io.ReadAll(r.r)
-	if err != nil {
-		return err
-	}
-	// TODO: reading it requires access to script variables map
-	r.m.ScriptData = &ScriptData{Data: data}
-	return nil
 }

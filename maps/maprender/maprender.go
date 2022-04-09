@@ -182,9 +182,12 @@ func (r *Renderer) drawTiles(out draw.Image, m *maps.Map, opts *Options) error {
 }
 
 func (r *Renderer) drawWalls(out draw.Image, m *maps.Map, opts *Options) error {
+	if m.Walls == nil {
+		return nil
+	}
 	var last error
-	for _, w := range m.Walls() {
-		img, pt, err := r.getWallImage(w)
+	for _, w := range m.Walls.Walls {
+		img, pt, err := r.getWallImage(&w)
 		if err != nil {
 			last = err
 			if opts.FailFast {
