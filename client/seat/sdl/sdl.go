@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/go-gl/gl/v3.3-core/gl"
+	"github.com/go-gl/gl/v2.1/gl"
 	"github.com/veandco/go-sdl2/sdl"
 
 	"github.com/noxworld-dev/opennox-lib/client/seat"
