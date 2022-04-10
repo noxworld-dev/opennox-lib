@@ -345,7 +345,7 @@ void main()
 	prog := gl.CreateProgram()
 	gl.AttachShader(prog, vert)
 	gl.AttachShader(prog, frag)
-	gl.BindFragDataLocation(prog, 0, gl.Str("outColor\x00"))
+	gl.BindFragDataLocationEXT(prog, 0, gl.Str("outColor\x00"))
 	gl.LinkProgram(prog)
 
 	var st int32
