@@ -1,6 +1,7 @@
 package sdl
 
 import (
+	_ "embed"
 	"errors"
 	"fmt"
 	"image"
@@ -15,6 +16,12 @@ import (
 	"github.com/noxworld-dev/opennox-lib/log"
 	"github.com/noxworld-dev/opennox-lib/types"
 )
+
+//go:embed shaders/screen.vert
+var shaderVert string
+
+//go:embed shaders/screen.frag
+var shaderFrag string
 
 var (
 	Log       = log.New("sdl")
@@ -290,6 +297,9 @@ func (win *Window) closeGL() {
 }
 
 func (win *Window) compileShader(typ uint32, src string) (uint32, error) {
+	if !strings.HasSuffix(src, "\x00") {
+		src += "\x00"
+	}
 	s := gl.CreateShader(typ)
 	cstr, free := gl.Strs(src)
 	gl.ShaderSource(s, 1, cstr, nil)
@@ -308,36 +318,11 @@ func (win *Window) compileShader(typ uint32, src string) (uint32, error) {
 }
 
 func (win *Window) initProgram() error {
-	const glVertShader = `#version 150 core
-in vec2 position;
-in vec2 texcoord;
-
-out vec2 Texcoord;
-
-void main()
-{
-	Texcoord = texcoord;
-    gl_Position = vec4(position, 0.0, 1.0);
-}
-` + "\x00"
-
-	const glFragShader = `#version 150 core
-uniform sampler2D tex;
-in vec2 Texcoord;
-
-out vec4 outColor;
-
-void main()
-{
-    outColor = texture(tex, Texcoord);
-}
-` + "\x00"
-
-	vert, err := win.compileShader(gl.VERTEX_SHADER, glVertShader)
+	vert, err := win.compileShader(gl.VERTEX_SHADER, shaderVert)
 	if err != nil {
 		return fmt.Errorf("cannot compile vertex shader: %w", err)
 	}
-	frag, err := win.compileShader(gl.FRAGMENT_SHADER, glFragShader)
+	frag, err := win.compileShader(gl.FRAGMENT_SHADER, shaderFrag)
 	if err != nil {
 		return fmt.Errorf("cannot compile vertex shader: %w", err)
 	}
