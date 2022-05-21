@@ -1,10 +1,14 @@
 #version 150 core
-uniform sampler2D tex;
+
 in vec2 Texcoord;
 
-out vec4 outColor;
+out vec4 color;
+
+uniform sampler2D tex;
+uniform float gamma = 1.0;
 
 void main()
 {
-    outColor = texture(tex, Texcoord);
+    color = texture(tex, Texcoord);
+    color.rgb = pow(color.rgb, vec3(1.0/gamma));
 }

@@ -72,21 +72,22 @@ func New(title string, sz image.Point) (*Window, error) {
 }
 
 type Window struct {
-	win      *sdl.Window
-	prevPos  image.Point
-	prevSz   image.Point
-	textInp  bool
-	mode     seat.ScreenMode
-	rel      bool
-	mpos     image.Point
-	onResize []func(sz image.Point)
-	onInput  []func(ev seat.InputEvent)
-	vao      uint32
-	vbo      uint32
-	ebo      uint32
-	prog     uint32
-	frag     uint32
-	vert     uint32
+	win       *sdl.Window
+	prevPos   image.Point
+	prevSz    image.Point
+	textInp   bool
+	mode      seat.ScreenMode
+	rel       bool
+	mpos      image.Point
+	onResize  []func(sz image.Point)
+	onInput   []func(ev seat.InputEvent)
+	vao       uint32
+	vbo       uint32
+	ebo       uint32
+	prog      uint32
+	frag      uint32
+	vert      uint32
+	gammaAttr int32
 }
 
 func (win *Window) Close() error {
@@ -232,11 +233,8 @@ func (win *Window) SetScreenMode(mode seat.ScreenMode) {
 
 // SetGamma sets screen gamma parameter.
 func (win *Window) SetGamma(v float32) {
-	var ramp [256]uint16
-	sdl.CalculateGammaRamp(v, &ramp)
-	if err := win.win.SetGammaRamp(&ramp, &ramp, &ramp); err != nil {
-		Log.Printf("cannot set gamma: %v", err)
-	}
+	gl.UseProgram(win.prog)
+	gl.Uniform1f(win.gammaAttr, v)
 }
 
 func (win *Window) OnScreenResize(fnc func(sz image.Point)) {
@@ -330,7 +328,7 @@ func (win *Window) initProgram() error {
 	prog := gl.CreateProgram()
 	gl.AttachShader(prog, vert)
 	gl.AttachShader(prog, frag)
-	gl.BindFragDataLocation(prog, 0, gl.Str("outColor\x00"))
+	gl.BindFragDataLocation(prog, 0, gl.Str("color\x00"))
 	gl.LinkProgram(prog)
 
 	var st int32
@@ -345,7 +343,9 @@ func (win *Window) initProgram() error {
 	win.prog = prog
 
 	gl.UseProgram(prog)
+	win.gammaAttr = gl.GetUniformLocation(prog, gl.Str("gamma\x00"))
 	gl.Uniform1i(gl.GetUniformLocation(prog, gl.Str("tex\x00")), 0)
+	gl.Uniform1f(win.gammaAttr, 1.0)
 
 	posAttr := gl.GetAttribLocation(prog, gl.Str("position\x00"))
 	gl.EnableVertexAttribArray(uint32(posAttr))
