@@ -47,17 +47,6 @@ func (p Pointf) Len() float64 {
 	return math.Sqrt(x*x + y*y)
 }
 
-type Rect struct {
-	Left   int
-	Top    int
-	Right  int
-	Bottom int
-}
-
-func (r *Rect) IsEmpty() bool {
-	return r.Right <= r.Left || r.Bottom <= r.Top
-}
-
 type Rectf struct {
 	Left   float32
 	Top    float32
@@ -86,35 +75,4 @@ func RectFromPointsf(p1, p2 Pointf) Rectf {
 		r.Bottom = p2.Y
 	}
 	return r
-}
-
-func UtilRectXxx(r1, r2 Rect) (Rect, bool) { // nox_xxx_utilRect_49F930
-	left := r2.Left
-	if r1.Left >= left {
-		left = r1.Left
-	}
-	right := r2.Right
-	if r1.Right <= right {
-		right = r1.Right
-	}
-	if left >= right {
-		return Rect{}, false
-	}
-	top := r2.Top
-	if r1.Top >= top {
-		top = r1.Top
-	}
-	bottom := r2.Bottom
-	if r1.Bottom <= bottom {
-		bottom = r1.Bottom
-	}
-	if top >= bottom {
-		return Rect{}, false
-	}
-	return Rect{
-		Left:   left,
-		Top:    top,
-		Right:  right,
-		Bottom: bottom,
-	}, true
 }
