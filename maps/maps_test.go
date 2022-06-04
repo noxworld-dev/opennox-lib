@@ -124,19 +124,6 @@ var casesMapInfo = []maps.Info{
 			},
 		},
 	},
-	{
-		Filename: "war01aa",
-		Size:     413000,
-		MapInfo: maps.MapInfo{
-			Format:     3,
-			Summary:    "Warrior Chapter 1a",
-			Author:     "Eric Beaumont",
-			Date:       "Saturday, January 8 2000",
-			Flags:      0x2,
-			MinPlayers: 2,
-			MaxPlayers: 16,
-		},
-	},
 }
 
 func TestReadFileInfo(t *testing.T) {
