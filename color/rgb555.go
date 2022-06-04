@@ -6,28 +6,31 @@ var (
 	_ Color16 = RGB555(0)
 )
 
-// ModelRGB555 stores RGB color in 15 bits (555).
-var ModelRGB555 = color.ModelFunc(modelRGB555)
-
-func modelRGB555(c color.Color) color.Color {
+// ToRGB555Color converts color.Color to RGB555.
+func ToRGB555Color(c color.Color) RGB555 {
 	switch c := c.(type) {
 	case RGB555:
 		return c
 	case RGBA5551:
 		return RGB555(c & 0x7fff)
-	case color.RGBA:
-		return ToRGB555(c.R, c.G, c.B)
+	case Color:
+		cl := c.ColorNRGBA()
+		return RGB555Color(cl.R, cl.G, cl.B)
+	case color.NRGBA:
+		return RGB555Color(c.R, c.G, c.B)
+	case color.Gray:
+		return RGB555Color(c.Y, c.Y, c.Y)
+	case color.Gray16:
+		v := byte(c.Y >> 8)
+		return RGB555Color(v, v, v)
 	}
-	r, g, b, _ := c.RGBA()
-	return ToRGB555(byte(r>>8), byte(g>>8), byte(b>>8))
+	cl := nrgbaModel(c)
+	return RGB555Color(cl.R, cl.G, cl.B)
 }
 
-// ToRGB555 converts RGB color to RGB555.
-func ToRGB555(r, g, b byte) RGB555 {
-	rb := uint16(uint32(r)*31/0xff) & 0x1f
-	gb := uint16(uint32(g)*31/0xff) & 0x1f
-	bb := uint16(uint32(b)*31/0xff) & 0x1f
-	return RGB555((bb << 0) | (gb << 5) | (rb << 10))
+// RGB555Color converts RGB color to RGB555.
+func RGB555Color(r, g, b byte) RGB555 {
+	return RGB555((uint16(b&0xf8) >> 3) | (uint16(g&0xf8) << 2) | (uint16(r&0xf8) << 7))
 }
 
 // RGB555 stores RGB color in 15 bits (555).
@@ -38,28 +41,31 @@ func (c RGB555) Color16() uint16 {
 	return uint16(c)
 }
 
-// RGBA32 implements Color.
-func (c RGB555) RGBA32() (v color.RGBA) {
-	r := uint32((c&0xfc00)>>10) * 0xff
-	g := uint32((c&0x03e0)>>5) * 0xff
-	b := uint32((c&0x001f)>>0) * 0xff
-	v.R = byte(r / 31)
-	v.G = byte(g / 31)
-	v.B = byte(b / 31)
+// Color32 implements Color16.
+func (c RGB555) Color32() uint32 {
+	v := uint32(c)
+	return v | v<<16
+}
+
+// ColorNRGBA implements Color.
+func (c RGB555) ColorNRGBA() (v color.NRGBA) {
+	v.R = byte((c >> 7) & 0xf8)
+	v.G = byte((c >> 2) & 0xf8)
+	v.B = byte((c << 3) & 0xf8)
 	v.A = 0xff
-	if r%31 != 0 {
-		v.R++
-	}
-	if g%31 != 0 {
-		v.G++
-	}
-	if b%31 != 0 {
-		v.B++
-	}
+	return
+}
+
+// ColorRGBA implements Color.
+func (c RGB555) ColorRGBA() (v color.RGBA) {
+	v.R = byte((c >> 7) & 0xf8)
+	v.G = byte((c >> 2) & 0xf8)
+	v.B = byte((c << 3) & 0xf8)
+	v.A = 0xff
 	return
 }
 
 // RGBA implements color.Color.
 func (c RGB555) RGBA() (r, g, b, a uint32) {
-	return c.RGBA32().RGBA()
+	return c.ColorNRGBA().RGBA()
 }

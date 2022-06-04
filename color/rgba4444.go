@@ -6,27 +6,44 @@ var (
 	_ Color16 = RGBA4444(0)
 )
 
-// ModelRGBA4444 stores RGBA color in 16 bits (4444).
-var ModelRGBA4444 = color.ModelFunc(modelRGBA4444)
-
-func modelRGBA4444(c color.Color) color.Color {
+// ToRGBA4444Color converts color.Color to RGBA4444.
+func ToRGBA4444Color(c color.Color) RGBA4444 {
 	switch c := c.(type) {
 	case RGBA4444:
 		return c
-	case color.RGBA:
-		return ToRGBA4444(c.R, c.G, c.B, c.A)
+	case Color:
+		cl := c.ColorNRGBA()
+		return RGBA4444Color(cl.R, cl.G, cl.B, cl.A)
+	case color.NRGBA:
+		return RGBA4444Color(c.R, c.G, c.B, c.A)
+	case color.Gray:
+		return RGBA4444Color(c.Y, c.Y, c.Y, 0xff)
+	case color.Gray16:
+		v := byte(c.Y >> 8)
+		return RGBA4444Color(v, v, v, 0xff)
+	case color.Alpha:
+		if c.A == 0 {
+			return RGBA4444Color(0, 0, 0, c.A)
+		}
+		return RGBA4444Color(0xff, 0xff, 0xff, c.A)
+	case color.Alpha16:
+		if c.A == 0 {
+			return RGBA4444Color(0, 0, 0, byte(c.A>>8))
+		}
+		return RGBA4444Color(0xff, 0xff, 0xff, byte(c.A>>8))
 	}
-	r, g, b, a := c.RGBA()
-	return ToRGBA4444(byte(r>>8), byte(g>>8), byte(b>>8), byte(a>>8))
+	cl := nrgbaModel(c)
+	return RGBA4444Color(cl.R, cl.G, cl.B, cl.A)
 }
 
-// ToRGBA4444 converts RGBA color to RGBA4444.
-func ToRGBA4444(r, g, b, a byte) RGBA4444 {
-	rb := uint16(uint32(r)*15/0xff) & 0xf
-	gb := uint16(uint32(g)*15/0xff) & 0xf
-	bb := uint16(uint32(b)*15/0xff) & 0xf
-	ab := uint16(uint32(a)*15/0xff) & 0xf
-	return RGBA4444((ab << 0) | (bb << 4) | (gb << 8) | (rb << 12))
+// RGBA4444Color converts RGBA color to RGBA4444.
+func RGBA4444Color(r, g, b, a byte) RGBA4444 {
+	return RGBA4444((uint16(a&0xf0) >> 4) | (uint16(b&0xf0) << 0) | (uint16(g&0xf0) << 4) | (uint16(r&0xf0) << 8))
+}
+
+// RGB4444Color converts RGB color to RGBA4444.
+func RGB4444Color(r, g, b byte) RGBA4444 {
+	return RGBA4444Color(r, g, b, 0xff)
 }
 
 // RGBA4444 stores RGBA color in 16 bits (4444).
@@ -37,20 +54,28 @@ func (c RGBA4444) Color16() uint16 {
 	return uint16(c)
 }
 
-// RGBA32 implements Color.
-func (c RGBA4444) RGBA32() (v color.RGBA) {
-	v.R = byte((c >> 12) & 0xf)
-	v.G = byte((c >> 8) & 0xf)
-	v.B = byte((c >> 4) & 0xf)
-	v.A = byte((c >> 0) & 0xf)
-	v.R = byte(uint32(v.R) * 0xff / 15)
-	v.G = byte(uint32(v.G) * 0xff / 15)
-	v.B = byte(uint32(v.B) * 0xff / 15)
-	v.A = byte(uint32(v.A) * 0xff / 15)
+// Color32 implements Color16.
+func (c RGBA4444) Color32() uint32 {
+	v := uint32(c)
+	return v | v<<16
+}
+
+// ColorNRGBA implements Color.
+func (c RGBA4444) ColorNRGBA() (v color.NRGBA) {
+	v.R = byte((c >> 8) & 0xf0)
+	v.G = byte((c >> 4) & 0xf0)
+	v.B = byte((c >> 0) & 0xf0)
+	v.A = byte((c << 4) & 0xf0)
 	return
+}
+
+// ColorRGBA implements Color.
+func (c RGBA4444) ColorRGBA() (v color.RGBA) {
+	r, g, b, a := c.ColorNRGBA().RGBA()
+	return color.RGBA{R: uint8(r >> 8), G: uint8(g >> 8), B: uint8(b >> 8), A: uint8(a >> 8)}
 }
 
 // RGBA implements color.Color.
 func (c RGBA4444) RGBA() (r, g, b, a uint32) {
-	return c.RGBA32().RGBA()
+	return c.ColorNRGBA().RGBA()
 }

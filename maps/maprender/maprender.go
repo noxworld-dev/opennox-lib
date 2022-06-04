@@ -96,7 +96,7 @@ func (r *Renderer) getImage(ind int) (image.Image, image.Point, error) {
 		}
 		r.imageByInd[ind] = img
 	}
-	return &img.RGBA, img.Point, nil
+	return img.Image, img.Point, nil
 }
 
 func (r *Renderer) getWallImage(w *maps.Wall) (image.Image, image.Point, error) {

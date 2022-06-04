@@ -129,20 +129,20 @@ func init() {
 					}
 				}
 				buf := bytes.NewBuffer(nil)
-				err = png.Encode(buf, &im.RGBA)
+				err = png.Encode(buf, im.Image)
 				if err != nil {
 					return err
 				}
 				if err := writeFile(base+".png", buf.Bytes()); err != nil {
 					return err
 				}
-				if im.Mask != nil {
+				if im.Material != nil {
 					buf.Reset()
-					err = png.Encode(buf, im.Mask)
+					err = png.Encode(buf, im.Material)
 					if err != nil {
 						return err
 					}
-					if err := writeFile(base+"_mask.png", buf.Bytes()); err != nil {
+					if err := writeFile(base+"_mat.png", buf.Bytes()); err != nil {
 						return err
 					}
 				}

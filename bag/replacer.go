@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"fmt"
 	"image"
-	"image/draw"
 	"io"
 	"os"
 	"path/filepath"
@@ -32,15 +31,6 @@ type Replacement struct {
 	ImageInd int
 	Image    image.Image
 	Point    *image.Point
-}
-
-func asRGBA(img image.Image) *image.RGBA {
-	if rgba, ok := img.(*image.RGBA); ok {
-		return rgba
-	}
-	rgba := image.NewRGBA(img.Bounds())
-	draw.Draw(rgba, rgba.Rect, img, img.Bounds().Min, draw.Src)
-	return rgba
 }
 
 // ReplaceSprites changes one or more sprites in the video.bag and video.idx.
@@ -321,7 +311,7 @@ func (rb *replacer) ReplaceSprites(list []Replacement) error {
 					ImageMeta: pcx.ImageMeta{
 						Type: ityp,
 					},
-					RGBA: *asRGBA(rp.Image),
+					Image: rp.Image,
 				}
 				skip := isize
 				if rp.Point != nil {

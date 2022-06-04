@@ -72,11 +72,15 @@ func (p *Image16) SubImage(r image.Rectangle) *Image16 {
 }
 
 func (p *Image16) At(x, y int) color.Color {
-	return p.RGBAAt(x, y)
+	return p.NRGBAAt(x, y)
 }
 
 func (p *Image16) RGBAAt(x, y int) color.RGBA {
-	return p.RGBA5551At(x, y).RGBA32()
+	return p.RGBA5551At(x, y).ColorRGBA()
+}
+
+func (p *Image16) NRGBAAt(x, y int) color.NRGBA {
+	return p.RGBA5551At(x, y).ColorNRGBA()
 }
 
 func (p *Image16) RGBA5551At(x, y int) noxcolor.RGBA5551 {
@@ -91,16 +95,21 @@ func (p *Image16) Set(x, y int, c color.Color) {
 	if !(image.Point{x, y}.In(p.Rect)) {
 		return
 	}
-	c2 := noxcolor.ModelRGBA5551.Convert(c).(noxcolor.RGBA5551)
-	p.set(x, y, c2)
+	p.set(x, y, noxcolor.ToRGBA5551Color(c))
 }
 
 func (p *Image16) SetRGBA(x, y int, c color.RGBA) {
 	if !(image.Point{x, y}.In(p.Rect)) {
 		return
 	}
-	c2 := noxcolor.ToRGBA5551(c.R, c.G, c.B, c.A)
-	p.set(x, y, c2)
+	p.set(x, y, noxcolor.ToRGBA5551Color(c))
+}
+
+func (p *Image16) SetNRGBA(x, y int, c color.NRGBA) {
+	if !(image.Point{x, y}.In(p.Rect)) {
+		return
+	}
+	p.set(x, y, noxcolor.RGBA5551Color(c.R, c.G, c.B, c.A))
 }
 
 func (p *Image16) SetRGBA5551(x, y int, c noxcolor.RGBA5551) {
