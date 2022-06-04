@@ -6,8 +6,6 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-
-	"nox/v1/internal/version"
 )
 
 var Root = &cobra.Command{
@@ -16,7 +14,6 @@ var Root = &cobra.Command{
 }
 
 func main() {
-	version.LogVersion()
 	if err := Root.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
