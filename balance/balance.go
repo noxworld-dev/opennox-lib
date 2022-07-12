@@ -228,12 +228,22 @@ func readGamedata(path string) (*File, error) {
 		val = append([]byte{}, val...) // copy
 		for len(val) == 0 || val[len(val)-1] != ';' {
 			if !sc.Scan() {
-				return nil, fmt.Errorf("invalid gamedata key: %q", string(raw))
+				break
 			}
-			val = append(val, sc.Bytes()...)
+			raw := bytes.TrimSpace(sc.Bytes())
+			raw = bytes.Trim(raw, "\x00")
+			if len(raw) != 0 && raw[0] == '#' {
+				// automatically fix missing ';' if values are separated by a comment
+				val = append(val, ';')
+				break
+			}
+			val = append(val, ' ')
+			val = append(val, raw...)
 		}
-		if len(val) == 0 || val[len(val)-1] != ';' {
-			return nil, fmt.Errorf("invalid gamedata key: %q", string(raw))
+		if len(val) == 0 {
+			return nil, fmt.Errorf("invalid gamedata value: empty value for key %q", string(key))
+		} else if val[len(val)-1] != ';' {
+			return nil, fmt.Errorf("invalid gamedata value: missing ';' after %q", string(raw))
 		}
 		val = val[:len(val)-1]
 		sub = bytes.FieldsFunc(val, func(r rune) bool {
@@ -244,11 +254,11 @@ func readGamedata(path string) (*File, error) {
 			if n := len(v); v[n-1] == 'f' {
 				v = v[:n-1]
 			}
-			v, err := strconv.ParseFloat(string(v), 64)
+			f, err := strconv.ParseFloat(string(v), 64)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("invalid gamedata value: expected: number or ';', got: %q, while reading line %q", string(v), string(key)+" = "+string(val))
 			}
-			out = append(out, v)
+			out = append(out, f)
 		}
 		if len(out) == 1 {
 			dst[name] = Float(out[0])
