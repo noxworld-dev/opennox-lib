@@ -42,6 +42,7 @@ type api struct {
 		metaUnit
 		metaPlayer
 		metaTimer
+		metaAudio
 	}
 	methods map[string]*method
 }
@@ -69,6 +70,7 @@ func (vm *api) initMeta() {
 	vm.initMetaUnit()
 	vm.initMetaPlayer()
 	vm.initMetaTimer()
+	vm.initMetaAudio()
 }
 
 func (vm *api) init() {
@@ -82,6 +84,7 @@ func (vm *api) init() {
 	vm.initUnitGroup()
 	vm.initPlayer()
 	vm.initTimer()
+	vm.initAudio()
 }
 
 func (vm *api) luaValueTo(s *lua.LState, li int, rt reflect.Type) (out reflect.Value, di int) {

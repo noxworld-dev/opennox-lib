@@ -44,10 +44,11 @@ type Game interface {
 	// WallGroupByID finds a wall group by ID.
 	WallGroupByID(id string) *WallGroup
 
+	// AudioEffect creates an audio effect with a given name at a specified position. Position can be nil.
+	AudioEffect(name string, pos Positioner)
+
 	Global() Printer
 	Console(error bool) Printer
-
-	// TODO: audio
 }
 
 var _ Game = BaseGame{}
@@ -123,6 +124,8 @@ func (BaseGame) WallAtGrid(pos image.Point) Wall {
 func (BaseGame) WallGroupByID(id string) *WallGroup {
 	panic("implement me")
 }
+
+func (BaseGame) AudioEffect(name string, pos Positioner) {}
 
 func (BaseGame) Global() Printer {
 	panic("implement me")
