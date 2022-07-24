@@ -42,9 +42,19 @@ func (p Pointf) Mul(v float32) Pointf {
 	return p
 }
 
+func (p Pointf) Div(v float32) Pointf {
+	p.X /= v
+	p.Y /= v
+	return p
+}
+
 func (p Pointf) Len() float64 {
 	x, y := float64(p.X), float64(p.Y)
 	return math.Sqrt(x*x + y*y)
+}
+
+func (p Pointf) Normalize() Pointf {
+	return p.Div(float32(p.Len()))
 }
 
 type Rectf struct {
