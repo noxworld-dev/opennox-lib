@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/noxworld-dev/opennox-lib/script"
+	"github.com/noxworld-dev/opennox-lib/spell"
 	"github.com/noxworld-dev/opennox-lib/types"
 )
 
@@ -60,6 +61,10 @@ type testUnit struct {
 	aggr    float32
 	retreat float32
 	regroup float32
+	spell   struct {
+		id  spell.ID
+		lvl int
+	}
 }
 
 func (u *testUnit) String() string {
@@ -233,6 +238,17 @@ func (u *testUnit) OnUnitSeeEnemy(fnc func(targ script.Unit)) {
 
 func (u *testUnit) OnUnitLostEnemy(fnc func(targ script.Unit)) {
 	panic("implement me")
+}
+
+func (u *testUnit) Cast(spell spell.ID, level int, target script.Positioner) bool {
+	u.spell.id = spell
+	u.spell.lvl = level
+	if target == nil {
+		u.targ = types.Pointf{}
+	} else {
+		u.targ = target.Pos()
+	}
+	return true
 }
 
 func TestUnitID(t *testing.T) {
@@ -558,6 +574,41 @@ func TestUnitActions(t *testing.T) {
 			require.Equal(t, obj2.pos, obj1.targ)
 		})
 	}
+}
+
+func TestUnitCast(t *testing.T) {
+	g := newGame(t)
+	v := g.newUnit("Test", 0, 0)
+	g.newUnit("Test2", 4, 5)
+	g.Exec(`
+	v = Nox.Object("Test")
+	v2 = Nox.Object("Test2")
+
+	if not v:Cast("BURN", 3, 1, 2) then
+		error("can't cast")
+	end
+`)
+	require.Equal(t, spell.SPELL_BURN, v.spell.id)
+	require.Equal(t, 3, v.spell.lvl)
+	require.Equal(t, v.targ, types.Pointf{1, 2})
+
+	g.Exec(`
+	if not v:Cast("CHARM", 2, v2) then
+		error("can't cast")
+	end
+`)
+	require.Equal(t, spell.SPELL_CHARM, v.spell.id)
+	require.Equal(t, 2, v.spell.lvl)
+	require.Equal(t, v.targ, types.Pointf{4, 5})
+
+	g.Exec(`
+	if not v:Cast("HASTE", 1, null) then
+		error("can't cast")
+	end
+`)
+	require.Equal(t, spell.SPELL_HASTE, v.spell.id)
+	require.Equal(t, 1, v.spell.lvl)
+	require.Equal(t, v.targ, types.Pointf{})
 }
 
 // TODO: test unit group

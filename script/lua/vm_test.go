@@ -180,6 +180,10 @@ func (g fakeGame) WallByPos(pos image.Point) script.Wall {
 	panic("implement me")
 }
 
+func (g fakeGame) AudioEffect(name string, pos script.Positioner) {
+	panic("implement me")
+}
+
 func (g fakeGame) Global() script.Printer {
 	return testPrinter{t: g.t, lvl: "global"}
 }

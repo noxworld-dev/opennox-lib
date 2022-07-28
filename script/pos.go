@@ -6,6 +6,16 @@ import (
 	"github.com/noxworld-dev/opennox-lib/types"
 )
 
+var _ Positioner = StaticPos{}
+
+// StaticPos wraps types.Pointf to implement Positioner.
+type StaticPos types.Pointf
+
+// Pos implements Positioner.
+func (p StaticPos) Pos() types.Pointf {
+	return types.Pointf(p)
+}
+
 // Positioner is an interface for objects that has position on the map.
 type Positioner interface {
 	// Pos returns current position of the object.

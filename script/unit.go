@@ -3,6 +3,7 @@ package script
 import (
 	"fmt"
 
+	"github.com/noxworld-dev/opennox-lib/spell"
 	"github.com/noxworld-dev/opennox-lib/types"
 )
 
@@ -76,6 +77,8 @@ type OffensiveGroup interface {
 	Guard()
 	// Hunt makes an object hunt for enemies.
 	Hunt()
+	// Cast a specific spell level at a given location. If location is nil, it will be cast on self.
+	Cast(spell spell.ID, level int, target Positioner) bool
 }
 
 // Offensive is an interface for objects that can attack or defend.
@@ -425,4 +428,17 @@ func (g *UnitGroup) Hunt() {
 	for _, v := range g.list {
 		v.Hunt()
 	}
+}
+
+func (g *UnitGroup) Cast(spell spell.ID, level int, target Positioner) bool {
+	if g == nil {
+		return false
+	}
+	anyOK := false
+	for _, v := range g.list {
+		if v.Cast(spell, level, target) {
+			anyOK = true
+		}
+	}
+	return anyOK
 }

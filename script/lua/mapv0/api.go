@@ -12,6 +12,7 @@ import (
 
 var (
 	rtPointf     = reflect.TypeOf(types.Pointf{})
+	rtPositioner = reflect.TypeOf((*script.Positioner)(nil)).Elem()
 	rtVoidFunc   = reflect.TypeOf((func())(nil))
 	rtPlayerFunc = reflect.TypeOf((func(player script.Player))(nil))
 	rtUnitFunc   = reflect.TypeOf((func(script.Unit))(nil))
@@ -93,7 +94,7 @@ func (vm *api) luaValueTo(s *lua.LState, li int, rt reflect.Type) (out reflect.V
 	// mostly used for custom handling of some well-known types
 	switch rt {
 	case rtPointf:
-		// two cases: a pair of coordinates or a Positioner
+		// two cases: a pair of coordinates or a Positioner (cast to Pointf)
 		switch s.Get(li).(type) {
 		case lua.LNumber:
 			x := s.CheckNumber(li + 0)
@@ -107,6 +108,26 @@ func (vm *api) luaValueTo(s *lua.LState, li int, rt reflect.Type) (out reflect.V
 				return
 			}
 			out = reflect.ValueOf(pos.Pos())
+		}
+	case rtPositioner:
+		// two cases: a pair of coordinates or a Positioner (cast to Positioner)
+		switch s.Get(li).(type) {
+		case lua.LNumber:
+			x := s.CheckNumber(li + 0)
+			y := s.CheckNumber(li + 1)
+			di++
+			out = reflect.ValueOf(script.StaticPos{X: float32(x), Y: float32(y)})
+		default:
+			if s.Get(li) == lua.LNil {
+				out = reflect.Zero(rtPositioner)
+			} else {
+				pos, ok := s.CheckUserData(li).Value.(script.Positioner)
+				if !ok {
+					s.ArgError(li, "argument doesn't doesn't have a position")
+					return
+				}
+				out = reflect.ValueOf(pos)
+			}
 		}
 	case rtVoidFunc: // func()
 		fnc := s.CheckFunction(li)

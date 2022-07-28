@@ -1,9 +1,12 @@
 package mapv0
 
 import (
+	"strings"
+
 	lua "github.com/yuin/gopher-lua"
 
 	"github.com/noxworld-dev/opennox-lib/script"
+	"github.com/noxworld-dev/opennox-lib/spell"
 	"github.com/noxworld-dev/opennox-lib/types"
 )
 
@@ -104,6 +107,13 @@ func (vm *api) initMetaUnit() {
 	vm.registerObjMethod("Hunt", func(obj script.OffensiveGroup) (_ receiverValue) {
 		obj.Hunt()
 		return
+	})
+	vm.registerObjMethod("Cast", func(obj script.OffensiveGroup, sp string, lvl int, targ script.Positioner) bool {
+		id := spell.ParseID("SPELL_" + strings.ToUpper(sp))
+		if id == spell.SPELL_INVALID {
+			return false
+		}
+		return obj.Cast(id, lvl, targ)
 	})
 
 	// Chatty
