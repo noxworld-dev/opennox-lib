@@ -2,11 +2,10 @@ package object
 
 import (
 	"encoding/json"
-	"fmt"
 	"strings"
 )
 
-var flagsNames = []string{
+var FlagsNames = []string{
 	"BELOW", "NO_UPDATE", "ACTIVE", "ALLOW_OVERLAP",
 	"SHORT", "DESTROYED", "NO_COLLIDE", "MISSILE_HIT",
 	"EQUIPPED", "PARTITIONED", "NO_COLLIDE_OWNER", "OWNER_VISIBLE",
@@ -17,18 +16,16 @@ var flagsNames = []string{
 	"NO_AUTO_DROP", "FLICKER", "SELECTED", "MARKED",
 }
 
-var (
-	_ json.Marshaler = Flags(0)
-)
+var _ enum[Flags] = Flags(0)
 
 func ParseFlag(s string) (Flags, error) {
-	s = strings.ToUpper(s)
-	for i, v := range flagsNames {
-		if s == v {
-			return Flags(1 << i), nil
-		}
-	}
-	return 0, fmt.Errorf("invalid flag name: %q", s)
+	v, err := parseEnum("flag", s, FlagsNames)
+	return Flags(v), err
+}
+
+func ParseFlagSet(s string) (Flags, error) {
+	v, err := parseEnumSet("flag", s, FlagsNames)
+	return Flags(v), err
 }
 
 type Flags uint32
@@ -97,7 +94,7 @@ func (c Flags) String() string {
 	for i := 0; i < 32; i++ {
 		c2 := Flags(1 << i)
 		if c.Has(c2) {
-			out = append(out, flagsNames[i])
+			out = append(out, FlagsNames[i])
 		}
 	}
 	return strings.Join(out, " | ")
