@@ -34,15 +34,55 @@ type Extent interface {
 	isExtent()
 }
 
+func ParseExtent(val string) (Extent, error) {
+	sub := strings.Fields(val)
+	typ := strings.ToUpper(sub[0])
+	sub = sub[1:]
+	switch typ {
+	default:
+		return nil, fmt.Errorf("unsupported extent type: %q", typ)
+	case "NULL":
+		return nil, nil
+	case "CENTER":
+		if len(sub) != 0 {
+			return nil, fmt.Errorf("expected zero element for %q", typ)
+		}
+		return Center{}, nil
+	case "CIRCLE":
+		// this should be len(sub) != 1, but data files may contain malformed fields
+		if len(sub) == 0 {
+			return nil, fmt.Errorf("expected one element for %q", typ)
+		}
+		r, err := strconv.ParseFloat(sub[0], 32)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing extent: %w", err)
+		}
+		return Circle{R: float32(r)}, nil
+	case "BOX":
+		if len(sub) != 2 {
+			return nil, fmt.Errorf("expected two element for %q", typ)
+		}
+		w, err := strconv.ParseFloat(sub[0], 32)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing extent: %w", err)
+		}
+		h, err := strconv.ParseFloat(sub[1], 32)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing extent: %w", err)
+		}
+		return Box{W: float32(w), H: float32(h)}, nil
+	}
+}
+
 type Circle struct {
-	R int `json:"r"`
+	R float32 `json:"r"`
 }
 
 func (Circle) isExtent() {}
 
 type Box struct {
-	W int `json:"w"`
-	H int `json:"h"`
+	W float32 `json:"w"`
+	H float32 `json:"h"`
 }
 
 func (Box) isExtent() {}
@@ -307,39 +347,10 @@ func (f *Reader) readThing() (*Thing, error) {
 					B: byte(b),
 				}
 			case "EXTENT":
-				sub := strings.Fields(val)
-				typ := strings.ToUpper(sub[0])
-				sub = sub[1:]
-				switch typ {
-				default:
-					return th, fmt.Errorf("unsupported extent type: %q (%q)", typ, attr)
-				case "CENTER":
-					if len(sub) != 0 {
-						return th, fmt.Errorf("expected zero element for %q", typ)
-					}
-					th.Extent = Center{}
-				case "CIRCLE":
-					if len(sub) != 1 {
-						return th, fmt.Errorf("expected one element for %q", typ)
-					}
-					r, err := strconv.Atoi(sub[0])
-					if err != nil {
-						return th, fmt.Errorf("error parsing %q: %w", key, err)
-					}
-					th.Extent = Circle{R: r}
-				case "BOX":
-					if len(sub) != 2 {
-						return th, fmt.Errorf("expected two element for %q", typ)
-					}
-					w, err := strconv.Atoi(sub[0])
-					if err != nil {
-						return th, fmt.Errorf("error parsing %q: %w", key, err)
-					}
-					h, err := strconv.Atoi(sub[1])
-					if err != nil {
-						return th, fmt.Errorf("error parsing %q: %w", key, err)
-					}
-					th.Extent = Box{W: w, H: h}
+				var err error
+				th.Extent, err = ParseExtent(val)
+				if err != nil {
+					return th, err
 				}
 			default:
 				ok, err := parseThingAttrByKey(th, key, val)
