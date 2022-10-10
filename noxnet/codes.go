@@ -28,6 +28,7 @@ const (
 	MSG_ACCEPTED        = Op(31) // 0x1F
 
 	MSG_XXX_STOP                       = Op(33)  // 0x21
+	MSG_PING                           = Op(36)  // 0x24
 	MSG_TIMESTAMP                      = Op(39)  // 0x27
 	MSG_FULL_TIMESTAMP                 = Op(40)  // 0x28
 	MSG_NEED_TIMESTAMP                 = Op(41)  // 0x29
