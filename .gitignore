@@ -1,3 +1,5 @@
 .idea/
+out/
+.tmp/
 *.png
 *.zip

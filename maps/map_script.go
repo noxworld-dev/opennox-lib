@@ -11,6 +11,34 @@ func init() {
 	RegisterSection(&ScriptData{})
 }
 
+func ReadScript(r io.Reader) (*Script, error) {
+	d, err := NewReader(r)
+	if err != nil {
+		return nil, err
+	}
+	return d.ReadScript()
+}
+
+func (r *Reader) ReadScript() (*Script, error) {
+	for {
+		sect, err := r.nextSection()
+		if err == io.EOF {
+			return nil, nil
+		} else if err != nil {
+			return nil, err
+		}
+		if sect == "ScriptObject" {
+			data, err := io.ReadAll(r.r)
+			if err != nil {
+				return nil, err
+			}
+			r.m.Script = new(Script)
+			err = r.m.Script.UnmarshalBinary(data)
+			return r.m.Script, err
+		}
+	}
+}
+
 type Script struct {
 	Data []byte
 }

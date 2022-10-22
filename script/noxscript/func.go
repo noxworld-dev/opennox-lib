@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"math"
+
+	asm "github.com/noxworld-dev/opennox-lib/script/noxscript/noxasm"
 )
 
 func (r *Runtime) newFunc(def *FuncDef) *Func {
@@ -173,8 +175,8 @@ func (f *Func) Call(caller, trigger Object, args ...interface{}) (gerr error) {
 		return v
 	}
 	for {
-		switch op := nextInt(); op {
-		case 0x00, 0x03: // int var or string var
+		switch op := asm.Op(nextInt()); op {
+		case asm.OpLoadVarInt, asm.OpLoadVarString: // int var or string var
 			isGlobal := nextInt() != 0
 			vari := int(nextInt())
 			var val int32
@@ -189,7 +191,7 @@ func (f *Func) Call(caller, trigger Object, args ...interface{}) (gerr error) {
 			}
 			r.PushInt32(val)
 			continue
-		case 0x01: // float var
+		case asm.OpLoadVarFloat: // float var
 			isGlobal := nextInt() != 0
 			vari := int(nextInt())
 			var val float32
@@ -203,7 +205,7 @@ func (f *Func) Call(caller, trigger Object, args ...interface{}) (gerr error) {
 			}
 			r.PushFloat32(val)
 			continue
-		case 0x02: // var ptr
+		case asm.OpLoadVarPtr: // var ptr
 			isGlobal := nextInt()
 			ind := int(nextInt())
 			// TODO: this exposes variable layout and forces us to access it unsafely in a few other ops
@@ -225,76 +227,76 @@ func (f *Func) Call(caller, trigger Object, args ...interface{}) (gerr error) {
 			r.PushInt32(isGlobal)
 			r.PushInt32(int32(ptr))
 			continue
-		case 0x04, 0x06: // int literal or string literal
+		case asm.OpPushInt, asm.OpPushString: // int literal or string literal
 			val := nextInt()
 			r.PushInt32(val)
 			continue
-		case 0x05: // float literal
+		case asm.OpPushFloat: // float literal
 			val := nextFloat()
 			r.PushFloat32(val)
 			continue
-		case 0x07, 0x09, 0x0B, 0x0D, 0x0F, // +, -, *, /, % (int)
-			0x10, 0x11, 0x12, 0x26, 0x27: // &, |, ^, <<, >> (int)
+		case asm.OpIntAdd, asm.OpIntSub, asm.OpIntMul, asm.OpIntDiv, asm.OpIntMod, // +, -, *, /, % (int)
+			asm.OpIntAnd, asm.OpIntOr, asm.OpIntXOr, asm.OpIntLSh, asm.OpIntRSh: // &, |, ^, <<, >> (int)
 			rhs := r.PopInt32()
 			lhs := r.PopInt32()
 			var val int32
 			switch op {
-			case 0x07:
+			case asm.OpIntAdd:
 				val = lhs + rhs
-			case 0x09:
+			case asm.OpIntSub:
 				val = lhs - rhs
-			case 0x0B:
+			case asm.OpIntMul:
 				val = lhs * rhs
-			case 0x0D:
+			case asm.OpIntDiv:
 				val = lhs / rhs
-			case 0x0F:
+			case asm.OpIntMod:
 				val = lhs % rhs
-			case 0x10:
+			case asm.OpIntAnd:
 				val = lhs & rhs
-			case 0x11:
+			case asm.OpIntOr:
 				val = lhs | rhs
-			case 0x12:
+			case asm.OpIntXOr:
 				val = lhs ^ rhs
-			case 0x26:
+			case asm.OpIntLSh:
 				val = lhs << rhs
-			case 0x27:
+			case asm.OpIntRSh:
 				val = lhs >> rhs
 			}
 			r.PushInt32(val)
 			continue
-		case 0x08, 0x0A, 0x0C, 0x0E: // +, -, *, / (float)
+		case asm.OpFloatAdd, asm.OpFloatSub, asm.OpFloatMul, asm.OpFloatDiv: // +, -, *, / (float)
 			rhs := r.PopFloat32()
 			lhs := r.PopFloat32()
 			var val float32
 			switch op {
-			case 0x08:
+			case asm.OpFloatAdd:
 				val = lhs + rhs
-			case 0x0A:
+			case asm.OpFloatSub:
 				val = lhs - rhs
-			case 0x0C:
+			case asm.OpFloatMul:
 				val = lhs * rhs
-			case 0x0E:
+			case asm.OpFloatDiv:
 				val = lhs / rhs
 			}
 			r.PushFloat32(val)
 			continue
-		case 0x13: // jump
+		case asm.OpJump: // jump
 			off := nextInt()
 			code = f.def.Code[off:]
 			continue
-		case 0x14: // jump if
+		case asm.OpJumpIf: // jump if
 			off := nextInt()
 			if r.PopBool() { // TODO: double-check condition
 				code = f.def.Code[off:]
 			}
 			continue
-		case 0x15: // jump if not
+		case asm.OpJumpIfNot: // jump if not
 			off := nextInt()
 			if !r.PopBool() { // TODO: double-check condition
 				code = f.def.Code[off:]
 			}
 			continue
-		case 0x16, 0x18: // = (int or string)
+		case asm.OpStoreInt, asm.OpStoreString: // = (int or string)
 			rhs := r.PopInt32()
 			ptr := r.PopInt()
 			isGlobal := r.PopBool()
@@ -307,7 +309,7 @@ func (f *Func) Call(caller, trigger Object, args ...interface{}) (gerr error) {
 			}
 			r.PushInt32(rhs)
 			continue
-		case 0x17: // = (float)
+		case asm.OpStoreFloat: // = (float)
 			rhs := r.PopFloat32()
 			ptr := r.PopInt()
 			isGlobal := r.PopBool()
@@ -320,8 +322,8 @@ func (f *Func) Call(caller, trigger Object, args ...interface{}) (gerr error) {
 			}
 			r.PushFloat32(rhs)
 			continue
-		case 0x19, 0x1B, 0x1D, 0x20, 0x22, // *=, /=, +=, -=, %=, (int)
-			0x39, 0x3A, 0x3B, 0x3C, 0x3D: //  <<=, >>=, &=, |=, ^= (int)
+		case asm.OpStoreIntMul, asm.OpStoreIntDiv, asm.OpStoreIntAdd, asm.OpStoreIntSub, asm.OpStoreIntMod, // *=, /=, +=, -=, %=, (int)
+			asm.OpStoreIntLSh, asm.OpStoreIntRSh, asm.OpStoreIntAnd, asm.OpStoreIntOr, asm.OpStoreIntXOr: //  <<=, >>=, &=, |=, ^= (int)
 			rhs := r.PopInt32()
 			ptr := r.PopInt()
 			isGlobal := r.PopBool()
@@ -334,25 +336,25 @@ func (f *Func) Call(caller, trigger Object, args ...interface{}) (gerr error) {
 				v = f.getPtrInt(ptr)
 			}
 			switch op {
-			case 0x19:
+			case asm.OpStoreIntMul:
 				v *= rhs
-			case 0x1B:
+			case asm.OpStoreIntDiv:
 				v /= rhs
-			case 0x1D:
+			case asm.OpStoreIntAdd:
 				v += rhs
-			case 0x20:
+			case asm.OpStoreIntSub:
 				v -= rhs
-			case 0x22:
+			case asm.OpStoreIntMod:
 				v %= rhs
-			case 0x39:
+			case asm.OpStoreIntLSh:
 				v <<= rhs
-			case 0x3A:
+			case asm.OpStoreIntRSh:
 				v >>= rhs
-			case 0x3B:
+			case asm.OpStoreIntAnd:
 				v &= rhs
-			case 0x3C:
+			case asm.OpStoreIntOr:
 				v |= rhs
-			case 0x3D:
+			case asm.OpStoreIntXOr:
 				v ^= rhs
 			}
 			if isGlobal {
@@ -364,7 +366,7 @@ func (f *Func) Call(caller, trigger Object, args ...interface{}) (gerr error) {
 			}
 			r.PushInt32(v)
 			continue
-		case 0x1A, 0x1C, 0x1E, 0x21: // *=, /=, +=, -= (float)
+		case asm.OpStoreFloatMul, asm.OpStoreFloatDiv, asm.OpStoreFloatAdd, asm.OpStoreFloatSub: // *=, /=, +=, -= (float)
 			rhs := r.PopFloat32()
 			ptr := r.PopInt()
 			isGlobal := r.PopBool()
@@ -377,13 +379,13 @@ func (f *Func) Call(caller, trigger Object, args ...interface{}) (gerr error) {
 				v = f.getPtrFloat(ptr)
 			}
 			switch op {
-			case 0x1A:
+			case asm.OpStoreFloatMul:
 				v *= rhs
-			case 0x1C:
+			case asm.OpStoreFloatDiv:
 				v /= rhs
-			case 0x1E:
+			case asm.OpStoreFloatAdd:
 				v += rhs
-			case 0x21:
+			case asm.OpStoreFloatSub:
 				v -= rhs
 			}
 			if isGlobal {
@@ -395,7 +397,7 @@ func (f *Func) Call(caller, trigger Object, args ...interface{}) (gerr error) {
 			}
 			r.PushFloat32(v)
 			continue
-		case 0x1F: // += (string)
+		case asm.OpStoreStringAdd: // += (string)
 			rhs := r.PopInt()
 			ptr := r.PopInt()
 			isGlobal := r.PopBool()
@@ -418,93 +420,93 @@ func (f *Func) Call(caller, trigger Object, args ...interface{}) (gerr error) {
 			}
 			r.PushInt32(sid)
 			continue
-		case 0x23, 0x28, 0x2B, 0x2E, 0x31, 0x34: // ==, <, >, <=, >=, != (int)
+		case asm.OpIntEq, asm.OpIntLt, asm.OpIntGt, asm.OpIntLte, asm.OpIntGte, asm.OpIntNeq: // ==, <, >, <=, >=, != (int)
 			rhs := r.PopInt32()
 			lhs := r.PopInt32()
 			var val bool
 			switch op {
-			case 0x23:
+			case asm.OpIntEq:
 				val = lhs == rhs
-			case 0x28:
+			case asm.OpIntLt:
 				val = lhs < rhs
-			case 0x2B:
+			case asm.OpIntGt:
 				val = lhs > rhs
-			case 0x2E:
+			case asm.OpIntLte:
 				val = lhs <= rhs
-			case 0x31:
+			case asm.OpIntGte:
 				val = lhs >= rhs
-			case 0x34:
+			case asm.OpIntNeq:
 				val = lhs != rhs
 			}
 			r.PushBool(val)
 			continue
-		case 0x24, 0x29, 0x2C, 0x2F, 0x32, 0x35: // ==, <, >, <=, >=, != (float)
+		case asm.OpFloatEq, asm.OpFloatLt, asm.OpFloatGt, asm.OpFloatLte, asm.OpFloatGte, asm.OpFloatNeq: // ==, <, >, <=, >=, != (float)
 			rhs := r.PopFloat32()
 			lhs := r.PopFloat32()
 			var val bool
 			switch op {
-			case 0x24:
+			case asm.OpFloatEq:
 				val = lhs == rhs
-			case 0x29:
+			case asm.OpFloatLt:
 				val = lhs < rhs
-			case 0x2C:
+			case asm.OpFloatGt:
 				val = lhs > rhs
-			case 0x2F:
+			case asm.OpFloatLte:
 				val = lhs <= rhs
-			case 0x32:
+			case asm.OpFloatGte:
 				val = lhs >= rhs
-			case 0x35:
+			case asm.OpFloatNeq:
 				val = lhs != rhs
 			}
 			r.PushBool(val)
 			continue
-		case 0x25, 0x2A, 0x2D, 0x30, 0x33, 0x36: // ==, <, >, <=, >=, != (string)
+		case asm.OpStringEq, asm.OpStringLt, asm.OpStringGt, asm.OpStringLte, asm.OpStringGte, asm.OpStringNeq: // ==, <, >, <=, >=, != (string)
 			rhs := r.PopString()
 			lhs := r.PopString()
 			var val bool
 			switch op {
-			case 0x25:
+			case asm.OpStringEq:
 				val = lhs == rhs
-			case 0x2A:
+			case asm.OpStringLt:
 				val = lhs < rhs
-			case 0x2D:
+			case asm.OpStringGt:
 				val = lhs > rhs
-			case 0x30:
+			case asm.OpStringLte:
 				val = lhs <= rhs
-			case 0x33:
+			case asm.OpStringGte:
 				val = lhs >= rhs
-			case 0x36:
+			case asm.OpStringNeq:
 				val = lhs != rhs
 			}
 			r.PushBool(val)
 			continue
-		case 0x37: // && (int)
+		case asm.OpBoolAnd: // && (int)
 			rhs := r.PopBool()
 			lhs := r.PopBool()
 			r.PushBool(lhs && rhs)
 			continue
-		case 0x38: // || (int)
+		case asm.OpBoolOr: // || (int)
 			rhs := r.PopBool()
 			lhs := r.PopBool()
 			r.PushBool(lhs || rhs)
 			continue
-		case 0x3E: // !v (int)
+		case asm.OpBoolNot: // !v (int)
 			v := r.PopBool()
 			r.PushBool(!v)
 			continue
-		case 0x3F: // ^v (int)
+		case asm.OpIntNot: // ^v (int)
 			v := r.PopInt32()
 			r.PushInt32(^v)
 			continue
-		case 0x40: // -v (int)
+		case asm.OpIntNeg: // -v (int)
 			v := r.PopInt32()
 			r.PushInt32(-v)
 			continue
-		case 0x41: // -v (float)
+		case asm.OpFloatNeg: // -v (float)
 			v := -r.PopFloat32()
 			r.PushFloat32(v)
 			continue
-		case 0x42: // [i] (int)
+		case asm.OpIndexInt: // [i] (int)
 			i := r.PopInt()
 			vari := r.PopInt()
 			isGlobal := r.PopBool()
@@ -522,7 +524,7 @@ func (f *Func) Call(caller, trigger Object, args ...interface{}) (gerr error) {
 			}
 			r.PushInt32(val)
 			continue
-		case 0x43: // [i] (float)
+		case asm.OpIndexFloat: // [i] (float)
 			i := r.PopInt()
 			vari := r.PopInt()
 			isGlobal := r.PopBool()
@@ -540,7 +542,7 @@ func (f *Func) Call(caller, trigger Object, args ...interface{}) (gerr error) {
 			}
 			r.PushFloat32(val)
 			continue
-		case 0x44: // &[i] (any)
+		case asm.OpIndexPtr: // &[i] (any)
 			i := r.PopInt()
 			vari := r.PopInt()
 			isGlobal := r.PopBool()
@@ -555,7 +557,7 @@ func (f *Func) Call(caller, trigger Object, args ...interface{}) (gerr error) {
 				r.PushInt(vari + i)
 			}
 			continue
-		case 0x45: // call builtin
+		case asm.OpCallBuiltin: // call builtin
 			ind := nextInt()
 			v, err := f.CallBuiltin(int(ind))
 			if err != nil {
@@ -564,18 +566,18 @@ func (f *Func) Call(caller, trigger Object, args ...interface{}) (gerr error) {
 				break // TODO: return error?
 			}
 			continue
-		case 0x46: // call script
+		case asm.OpCallScript: // call script
 			ind := int(nextInt())
 			if err := r.FuncByInd(ind).Call(caller, trigger); err != nil {
 				return err
 			}
 			continue
-		case 0x49: // + (string)
+		case asm.OpStringAdd: // + (string)
 			sa1 := r.PopString()
 			sa2 := r.PopString()
 			r.PushString(sa2 + sa1)
 			continue
-		case 0x47, 0x48:
+		case asm.OpReturn0, asm.OpReturn:
 		default:
 		}
 		if top := r.stackTop(); top != bstack+f.def.Return {
