@@ -923,7 +923,7 @@ func (t *translator) inferTypeOf(v ast.Expr) {
 	if !ok || len(ts.Hints) == 0 {
 		return
 	}
-	log.Printf("type hints for %q: %v", obj.Name, ts.Hints)
+	//log.Printf("type hints for %q: %v", obj.Name, ts.Hints)
 	rt, ok := ts.Best()
 	if !ok {
 		log.Printf("multiple hints for %q: %v", obj.Name, ts.Hints)

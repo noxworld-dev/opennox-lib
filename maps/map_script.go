@@ -20,6 +20,18 @@ func ReadScript(r io.Reader) (*Script, error) {
 }
 
 func (r *Reader) ReadScript() (*Script, error) {
+	data, err := r.readScriptRaw()
+	if err != nil {
+		return nil, err
+	} else if len(data) == 0 {
+		return nil, nil
+	}
+	r.m.Script = new(Script)
+	err = r.m.Script.UnmarshalBinary(data)
+	return r.m.Script, err
+}
+
+func (r *Reader) readScriptRaw() ([]byte, error) {
 	for {
 		sect, err := r.nextSection()
 		if err == io.EOF {
@@ -28,13 +40,7 @@ func (r *Reader) ReadScript() (*Script, error) {
 			return nil, err
 		}
 		if sect == "ScriptObject" {
-			data, err := io.ReadAll(r.r)
-			if err != nil {
-				return nil, err
-			}
-			r.m.Script = new(Script)
-			err = r.m.Script.UnmarshalBinary(data)
-			return r.m.Script, err
+			return io.ReadAll(r.r)
 		}
 	}
 }
