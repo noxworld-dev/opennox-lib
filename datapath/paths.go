@@ -74,6 +74,8 @@ func pathPrefixes() []string {
 		// TODO: these are probably from Lutris, but not sure if they are the default ones
 		filepath.Join(home, "Games/gog/nox/drive_c"),
 		filepath.Join(home, "Games/gog/nox/drive_d"),
+		// Heroic launcher
+		filepath.Join(home, "Games/Heroic"),
 		// fallback to home as a last resort
 		home,
 	}
