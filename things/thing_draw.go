@@ -1,5 +1,11 @@
 package things
 
+import (
+	"fmt"
+	"io"
+	"strings"
+)
+
 type Draw interface {
 	isDraw()
 }
@@ -88,11 +94,51 @@ type ConditionalAnimateDraw struct {
 
 func (ConditionalAnimateDraw) isDraw() {}
 
+type MonsterAnimationType byte
+
+type MonsterAnimation struct {
+	Type         MonsterAnimationType `json:"type"`
+	Sound        string               `json:"sound,omitempty"`
+	Field8       string               `json:"field_8,omitempty"`
+	FramesPerDir byte                 `json:"frames_per_dir"`
+	Field10      byte                 `json:"field_10,omitempty"`
+	Kind         AnimationKind        `json:"kind"`
+	Frames       []ImageRef           `json:"frames"`
+}
+
+type MonsterDraw struct {
+	Anims []MonsterAnimation `json:"monster"`
+}
+
+func (MonsterDraw) isDraw() {}
+
+type MaidenDraw struct {
+	Anims []MonsterAnimation `json:"maiden"`
+}
+
+func (MaidenDraw) isDraw() {}
+
 type MonsterGeneratorDraw struct {
 	Anims []Animation `json:"monster_gen"`
 }
 
 func (MonsterGeneratorDraw) isDraw() {}
+
+type PlayerAnim struct {
+	FramesPerDir byte   `json:"frames_per_dir"`
+	Field8       byte   `json:"field_8,omitempty"`
+	Field12      string `json:"field_12,omitempty"`
+}
+
+type PlayerAnimType string
+type PlayerAnimPart string
+
+type PlayerDraw struct {
+	Anims map[PlayerAnimType]PlayerAnim `json:"player_anim"`
+	Parts map[PlayerAnimPart][]ImageRef `json:"player_part"`
+}
+
+func (PlayerDraw) isDraw() {}
 
 func (f *Reader) readAnimation() (*Animation, error) {
 	frames, err := f.readU8()
@@ -170,12 +216,138 @@ func (f *Reader) skipAnimations8() error {
 	return nil
 }
 
+func (f *Reader) readMonsterDraw() (MonsterDraw, error) {
+	d := MonsterDraw{}
+	for {
+		sect, err := f.readSect()
+		if err == io.EOF {
+			return d, io.ErrUnexpectedEOF
+		} else if err != nil {
+			return d, err
+		}
+		switch sect {
+		default:
+			return d, fmt.Errorf("unsupported monster draw sect: %q", sect)
+		case "END ":
+			return d, nil
+		case "STAT":
+			typ, err := f.readU8()
+			if err != nil {
+				return d, err
+			}
+			snd, err := f.readString8()
+			if err != nil {
+				return d, err
+			}
+			fld8, err := f.readString8()
+			if err != nil {
+				return d, err
+			}
+			framesN, err := f.readU8()
+			if err != nil {
+				return d, err
+			}
+			fld10, err := f.readU8()
+			if err != nil {
+				return d, err
+			}
+			kind, err := f.readBytes8()
+			if err != nil {
+				return d, err
+			}
+			ani := MonsterAnimation{
+				Type:         MonsterAnimationType(typ),
+				Sound:        snd,
+				Field8:       strings.TrimRight(fld8, "\x00"),
+				FramesPerDir: framesN,
+				Field10:      fld10,
+				Frames:       make([]ImageRef, 0, 8*int(framesN)),
+			}
+			if err = ani.Kind.UnmarshalText(kind); err != nil {
+				return d, err
+			}
+			for i := 0; i < 8; i++ {
+				for j := 0; j < int(framesN); j++ {
+					ref, err := f.readImageRef()
+					if err != nil {
+						return d, err
+					}
+					ani.Frames = append(ani.Frames, *ref)
+				}
+			}
+			d.Anims = append(d.Anims, ani)
+		}
+	}
+}
+
+func (f *Reader) readPlayerDraw() (PlayerDraw, error) {
+	d := PlayerDraw{
+		Anims: make(map[PlayerAnimType]PlayerAnim),
+		Parts: make(map[PlayerAnimPart][]ImageRef),
+	}
+	var lastFrames int
+	for {
+		sect, err := f.readSect()
+		if err == io.EOF {
+			return d, io.ErrUnexpectedEOF
+		} else if err != nil {
+			return d, err
+		}
+		switch sect {
+		default:
+			return d, fmt.Errorf("unsupported monster draw sect: %q", sect)
+		case "END ":
+			return d, nil
+		case "STAT":
+			name, err := f.readString8()
+			if err != nil {
+				return d, err
+			}
+			framesN, err := f.readU8()
+			if err != nil {
+				return d, err
+			}
+			lastFrames = int(framesN)
+			fld8, err := f.readU8()
+			if err != nil {
+				return d, err
+			}
+			fld12, err := f.readString8()
+			if err != nil {
+				return d, err
+			}
+			ani := PlayerAnim{
+				FramesPerDir: framesN,
+				Field8:       fld8,
+				Field12:      fld12,
+			}
+			d.Anims[PlayerAnimType(name)] = ani
+		case "SEQU":
+			name, err := f.readString8()
+			if err != nil {
+				return d, err
+			}
+			frames := make([]ImageRef, 0, 8*lastFrames)
+			for i := 0; i < 8; i++ {
+				for j := 0; j < lastFrames; j++ {
+					ref, err := f.readImageRef()
+					if err != nil {
+						return d, err
+					}
+					frames = append(frames, *ref)
+				}
+			}
+			d.Parts[PlayerAnimPart(name)] = frames
+		}
+	}
+}
+
 func (f *Reader) skipThingDraw() error {
 	dname, err := f.readString8()
 	if err != nil {
 		return err
 	}
-	_, err = f.readU64align()
+	sectSz, err := f.readU64align()
 	if err != nil {
 		return err
 	}
@@ -217,6 +389,10 @@ func (f *Reader) skipThingDraw() error {
 		if err := f.skipImageRefs8(); err != nil {
 			return err
 		}
+	default:
+		if err := f.skip(int(sectSz)); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -226,7 +402,7 @@ func (f *Reader) readThingDraw() (Draw, error) {
 	if err != nil {
 		return nil, err
 	}
-	_, err = f.readU64align()
+	sectSz, err := f.readU64align()
 	if err != nil {
 		return nil, err
 	}
@@ -299,16 +475,29 @@ func (f *Reader) readThingDraw() (Draw, error) {
 			return nil, err // FIXME
 		}
 	case "MonsterDraw", "MaidenDraw":
-		if err := f.skipThingMonsterDraw(); err != nil {
-			return nil, err // FIXME
+		d, err := f.readMonsterDraw()
+		if err != nil {
+			return nil, err
+		}
+		switch dname {
+		case "MonsterDraw":
+			return d, nil
+		case "MaidenDraw":
+			return MaidenDraw(d), nil
 		}
 	case "PlayerDraw":
-		if err := f.skipThingPlayerDraw(); err != nil {
-			return nil, err // FIXME
+		d, err := f.readPlayerDraw()
+		if err != nil {
+			return nil, err
 		}
+		return d, nil
 	case "SlaveDraw", "BoulderDraw", "ArrowDraw", "WeakArrowDraw", "HarpoonDraw":
 		if err := f.skipImageRefs8(); err != nil {
 			return nil, err // FIXME
+		}
+	default:
+		if err := f.skip(int(sectSz)); err != nil {
+			return nil, err
 		}
 	}
 	return nil, nil

@@ -353,16 +353,6 @@ func WriteSpellsYAML(path string, list []Spell) error {
 	return f.Close()
 }
 
-func SkipSpellsSection(r io.Reader) error {
-	f := newDirectReader(r)
-	return f.skipSPEL()
-}
-
-func ReadSpellsSection(r io.Reader) ([]Spell, error) {
-	f := newDirectReader(r)
-	return f.readSPEL()
-}
-
 func (f *Reader) ReadSpells() ([]Spell, error) {
 	if err := f.seek(0, io.SeekStart); err != nil {
 		return nil, err
@@ -371,10 +361,11 @@ func (f *Reader) ReadSpells() ([]Spell, error) {
 	if !ok {
 		return nil, err
 	}
-	return f.readSPEL()
+	return f.ReadSpellsSect()
 }
 
-func (f *Reader) skipSPEL() error {
+// SkipSpellsSect skips one SPEL section. It assumes the reader is already positioned at the section start.
+func (f *Reader) SkipSpellsSect() error {
 	n, err := f.readU32()
 	if err != nil {
 		return err
@@ -427,7 +418,8 @@ func (f *Reader) skipSPEL() error {
 	return nil // no END here
 }
 
-func (f *Reader) readSPEL() ([]Spell, error) {
+// ReadSpellsSect reads one SPEL section. It assumes the reader is already positioned at the section start.
+func (f *Reader) ReadSpellsSect() ([]Spell, error) {
 	n, err := f.readU32()
 	if err != nil {
 		return nil, err

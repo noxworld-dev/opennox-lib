@@ -8,6 +8,7 @@ import (
 	"io"
 
 	"github.com/noxworld-dev/noxcrypt"
+
 	"github.com/noxworld-dev/opennox-lib/ifs"
 )
 
@@ -27,10 +28,13 @@ type Reader struct {
 	br *bufio.Reader
 }
 
-func newDirectReader(r io.Reader) *Reader {
-	return &Reader{br: bufio.NewReader(r)}
+// NewReader creates a new thing.bin file reader. It assumes the file was already decrypted.
+func NewReader(r io.ReadSeeker) *Reader {
+	return &Reader{f: r, br: bufio.NewReader(r)}
 }
 
+// OpenReader creates a new thing.bin file reader and decrypts it with a given key.
+// If key is set to zero, default key is used.
 func OpenReader(f io.ReadSeeker, key int) (*Reader, error) {
 	if key == 0 {
 		key = crypt.ThingBin
@@ -45,6 +49,7 @@ func OpenReader(f io.ReadSeeker, key int) (*Reader, error) {
 	}, nil
 }
 
+// Open thing.bin file. It is similar to OpenReader, but will automatically open file and select decryption key.
 func Open(path string) (*Reader, error) {
 	key, ok := crypt.KeyForFile(path)
 	if !ok {
@@ -63,6 +68,7 @@ func Open(path string) (*Reader, error) {
 	return tf, nil
 }
 
+// Close the underlying file, if any.
 func (f *Reader) Close() error {
 	if f.c == nil {
 		return nil
@@ -70,12 +76,24 @@ func (f *Reader) Close() error {
 	return f.c.Close()
 }
 
+// Buffered returns the size of underlying buffer.
+func (f *Reader) Buffered() int {
+	if f.br == nil {
+		return 0
+	}
+	return f.br.Buffered()
+}
+
 func (f *Reader) offset() (int64, error) {
 	off, err := f.f.Seek(0, io.SeekCurrent)
 	if err != nil {
 		return 0, err
 	}
-	return off - int64(f.br.Buffered()+f.r.Buffered()), nil
+	coff := 0
+	if f.r != nil {
+		coff = f.r.Buffered()
+	}
+	return off - int64(f.br.Buffered()+coff), nil
 }
 
 func (f *Reader) seek(off int64, whence int) error {
@@ -308,7 +326,7 @@ func (f *Reader) skipUntil(exp string) (bool, error) {
 				return false, err
 			}
 		case "SPEL":
-			if err := f.skipSPEL(); err != nil {
+			if err := f.SkipSpellsSect(); err != nil {
 				return false, err
 			}
 		case "ABIL":
@@ -320,7 +338,7 @@ func (f *Reader) skipUntil(exp string) (bool, error) {
 				return false, err
 			}
 		case "THNG":
-			if err := f.skipTHNG(); err != nil {
+			if err := f.SkipThingSect(); err != nil {
 				return false, err
 			}
 		case "\x00\x00\x00\x00":
@@ -374,7 +392,7 @@ func (f *Reader) ReadAll() (*Data, error) {
 				return &data, err
 			}
 		case "SPEL":
-			list, err := f.readSPEL()
+			list, err := f.ReadSpellsSect()
 			if err != nil {
 				return &data, err
 			}
@@ -391,7 +409,7 @@ func (f *Reader) ReadAll() (*Data, error) {
 			}
 			data.Images = append(data.Images, list...)
 		case "THNG":
-			th, err := f.readThing()
+			th, err := f.ReadThingSect()
 			if err != nil {
 				return &data, err
 			}

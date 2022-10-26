@@ -93,6 +93,8 @@ func (Center) isExtent() {}
 
 type Flag string
 type Class string
+type SubClass string
+type Material string
 
 type RGB struct {
 	R byte `json:"r"`
@@ -106,12 +108,13 @@ type ProcFunc struct {
 }
 
 type Thing struct {
-	Name        string    `json:"name" nox:"-"`
-	PrettyName  strman.ID `json:"pretty_name,omitempty" nox:"PRETTYNAME"`
-	Description strman.ID `json:"description,omitempty" nox:"DESCRIPTION"`
-	Class       []Class   `json:"class,omitempty" nox:"CLASS"`
-	SubClass    []Class   `json:"sub_class,omitempty" nox:"SUBCLASS"`
-	Flags       []Flag    `json:"flags,omitempty" nox:"FLAGS"`
+	Name        string     `json:"name" nox:"-"`
+	PrettyName  strman.ID  `json:"pretty_name,omitempty" nox:"PRETTYNAME"`
+	Description strman.ID  `json:"description,omitempty" nox:"DESCRIPTION"`
+	Class       []Class    `json:"class,omitempty" nox:"CLASS"`
+	SubClass    []SubClass `json:"sub_class,omitempty" nox:"SUBCLASS"`
+	Flags       []Flag     `json:"flags,omitempty" nox:"FLAGS"`
+	Material    []Material `json:"material,omitempty" nox:"MATERIAL"`
 
 	Menu           *ImageRef    `json:"menu,omitempty" nox:"MENUICON"`
 	Image          *ImageRef    `json:"image,omitempty" nox:"PRETTYIMAGE"`
@@ -127,7 +130,6 @@ type Thing struct {
 	CarryCap       int          `json:"carry_cap,omitempty" nox:"CARRYCAPACITY"`
 	Lifetime       int          `json:"lifetime,omitempty" nox:"LIFETIME"`
 	Experience     int          `json:"experience,omitempty" nox:"EXPERIENCE"`
-	Material       string       `json:"material,omitempty" nox:"MATERIAL"`
 	Draw           Draw         `json:"draw,omitempty" nox:"-"`
 	AudioLoop      string       `json:"audio_loop,omitempty" nox:"AUDIOLOOP"`
 	DamageSound    string       `json:"damage_sound,omitempty" nox:"DAMAGESOUND"`
@@ -166,7 +168,7 @@ func (f *Reader) ReadThings() ([]Thing, error) {
 		if !ok {
 			return out, err
 		}
-		th, err := f.readThing()
+		th, err := f.ReadThingSect()
 		if err != nil {
 			return out, err
 		}
@@ -254,7 +256,8 @@ func fixThingAttrs(attr string) []string {
 	return out
 }
 
-func (f *Reader) readThing() (*Thing, error) {
+// ReadThingSect reads one THNG section. It assumes the reader is already positioned at the section start.
+func (f *Reader) ReadThingSect() (*Thing, error) {
 	name, err := f.readString8()
 	if err != nil {
 		return nil, err
@@ -364,7 +367,8 @@ func (f *Reader) readThing() (*Thing, error) {
 	}
 }
 
-func (f *Reader) skipTHNG() error {
+// SkipThingSect skips one THNG section. It assumes the reader is already positioned at the section start.
+func (f *Reader) SkipThingSect() error {
 	if err := f.skipBytes8(); err != nil {
 		return err
 	}
@@ -491,54 +495,39 @@ func (f *Reader) skipThingMonsterDraw() error {
 }
 
 func (f *Reader) skipThingPlayerDraw() error {
-	sect, err := f.readSect()
-	if err == io.EOF {
-		return nil
-	} else if err != nil {
-		return err
-	}
-	switch sect {
-	default:
-		return fmt.Errorf("unsupported player draw sect: %q", sect)
-	case "END ":
-		return nil
-	case "STAT":
-	}
-stat:
+	var ssz int
 	for {
-		if err := f.skipBytes8(); err != nil {
+		sect, err := f.readSect()
+		if err == io.EOF {
+			return io.ErrUnexpectedEOF
+		} else if err != nil {
 			return err
 		}
-		n, err := f.skipThingAnimComplexHeader()
-		if err != nil {
-			return err
-		}
-		for {
-			sect, err := f.readSect()
-			if err == io.EOF {
-				return io.ErrUnexpectedEOF
-			} else if err != nil {
+		switch sect {
+		case "END ":
+			return nil
+		case "STAT":
+			if err := f.skipBytes8(); err != nil {
 				return err
 			}
-			switch sect {
-			default:
-				return fmt.Errorf("unsupported player draw sect: %q", sect)
-			case "END ":
-				return nil
-			case "STAT":
-				goto stat
-			case "SEQU":
+			n, err := f.skipThingAnimComplexHeader()
+			if err != nil {
+				return err
 			}
+			ssz = n
+		case "SEQU":
 			if err := f.skipBytes8(); err != nil {
 				return err
 			}
 			for i := 0; i < 8; i++ {
-				for j := 0; j < n; j++ {
+				for j := 0; j < ssz; j++ {
 					if err := f.skipImageRef(); err != nil {
 						return err
 					}
 				}
 			}
+		default:
+			return fmt.Errorf("unsupported player draw sect: %q", sect)
 		}
 	}
 }
