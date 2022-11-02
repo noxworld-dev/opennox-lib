@@ -11,8 +11,9 @@ require (
 	github.com/stretchr/testify v1.8.0
 	github.com/veandco/go-sdl2 v0.4.25
 	github.com/yuin/gopher-lua v0.0.0-20220504180219-658193537a64
+	golang.org/x/exp v0.0.0-20221031165847-c99f073a8326
 	golang.org/x/image v0.0.0-20220902085622-e7cb96979f69
-	golang.org/x/sys v0.0.0-20220319134239-a9b59b0215f8
+	golang.org/x/sys v0.1.0
 	golang.org/x/text v0.3.7
 	gopkg.in/yaml.v2 v2.4.0
 )

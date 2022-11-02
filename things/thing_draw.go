@@ -3,7 +3,10 @@ package things
 import (
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
+
+	"github.com/noxworld-dev/opennox-lib/player"
 )
 
 type Draw interface {
@@ -96,6 +99,51 @@ func (ConditionalAnimateDraw) isDraw() {}
 
 type MonsterAnimationType byte
 
+func (v MonsterAnimationType) String() string {
+	if v >= 0 && int(v) < len(monsterAnimNames) {
+		return monsterAnimNames[v]
+	}
+	return "A_" + strconv.Itoa(int(v))
+}
+
+const (
+	MonsterAnimSpecial3  = MonsterAnimationType(0) // TODO static?
+	MonsterAnimMelee     = MonsterAnimationType(1)
+	MonsterAnimMeleeEnd  = MonsterAnimationType(2)
+	MonsterAnimRanged    = MonsterAnimationType(3)
+	MonsterAnimRangedEnd = MonsterAnimationType(4)
+	MonsterAnimDefend    = MonsterAnimationType(5)
+	MonsterAnimDefendEnd = MonsterAnimationType(6)
+	MonsterAnimCast      = MonsterAnimationType(7)
+	MonsterAnimIdle      = MonsterAnimationType(8)
+	MonsterAnimDie       = MonsterAnimationType(9)
+	MonsterAnimDead      = MonsterAnimationType(10)
+	MonsterAnimHurt      = MonsterAnimationType(11)
+	MonsterAnimWalk      = MonsterAnimationType(12)
+	MonsterAnimRun       = MonsterAnimationType(13)
+	MonsterAnimSpecial1  = MonsterAnimationType(14)
+	MonsterAnimSpecial2  = MonsterAnimationType(15)
+)
+
+var monsterAnimNames = []string{
+	MonsterAnimSpecial3:  "SPECIAL_3",
+	MonsterAnimMelee:     "ATTACK",
+	MonsterAnimMeleeEnd:  "ATTACK_FINISH",
+	MonsterAnimRanged:    "ATTACK_FAR",
+	MonsterAnimRangedEnd: "ATTACK_FAR_FINISH",
+	MonsterAnimDefend:    "DEFEND",
+	MonsterAnimDefendEnd: "DEFEND_FINISH",
+	MonsterAnimCast:      "CAST_SPELL",
+	MonsterAnimIdle:      "IDLE",
+	MonsterAnimDie:       "DIE",
+	MonsterAnimDead:      "DEAD",
+	MonsterAnimHurt:      "HURT",
+	MonsterAnimWalk:      "MOVE",
+	MonsterAnimRun:       "MOVE_2",
+	MonsterAnimSpecial1:  "SPECIAL_1",
+	MonsterAnimSpecial2:  "SPECIAL_2",
+}
+
 type MonsterAnimation struct {
 	Type         MonsterAnimationType `json:"type"`
 	Sound        string               `json:"sound,omitempty"`
@@ -103,7 +151,7 @@ type MonsterAnimation struct {
 	FramesPerDir byte                 `json:"frames_per_dir"`
 	Field10      byte                 `json:"field_10,omitempty"`
 	Kind         AnimationKind        `json:"kind"`
-	Frames       []ImageRef           `json:"frames"`
+	Frames       [8][]ImageRef        `json:"frames"`
 }
 
 type MonsterDraw struct {
@@ -125,20 +173,23 @@ type MonsterGeneratorDraw struct {
 func (MonsterGeneratorDraw) isDraw() {}
 
 type PlayerAnim struct {
-	FramesPerDir byte   `json:"frames_per_dir"`
-	Field8       byte   `json:"field_8,omitempty"`
-	Field12      string `json:"field_12,omitempty"`
+	FramesPerDir byte                              `json:"frames_per_dir"`
+	Field8       byte                              `json:"field_8,omitempty"`
+	Field12      string                            `json:"field_12,omitempty"`
+	Parts        map[player.AnimPart][8][]ImageRef `json:"parts"`
 }
 
-type PlayerAnimType string
-type PlayerAnimPart string
-
 type PlayerDraw struct {
-	Anims map[PlayerAnimType]PlayerAnim `json:"player_anim"`
-	Parts map[PlayerAnimPart][]ImageRef `json:"player_part"`
+	Anims map[player.AnimType]*PlayerAnim `json:"player"`
 }
 
 func (PlayerDraw) isDraw() {}
+
+type UnknownDraw struct {
+	Type string `json:"unknown"`
+}
+
+func (UnknownDraw) isDraw() {}
 
 func (f *Reader) readAnimation() (*Animation, error) {
 	frames, err := f.readU8()
@@ -261,19 +312,20 @@ func (f *Reader) readMonsterDraw() (MonsterDraw, error) {
 				Field8:       strings.TrimRight(fld8, "\x00"),
 				FramesPerDir: framesN,
 				Field10:      fld10,
-				Frames:       make([]ImageRef, 0, 8*int(framesN)),
 			}
 			if err = ani.Kind.UnmarshalText(kind); err != nil {
 				return d, err
 			}
 			for i := 0; i < 8; i++ {
+				frames := make([]ImageRef, 0, int(framesN))
 				for j := 0; j < int(framesN); j++ {
 					ref, err := f.readImageRef()
 					if err != nil {
 						return d, err
 					}
-					ani.Frames = append(ani.Frames, *ref)
+					frames = append(frames, *ref)
 				}
+				ani.Frames[i] = frames
 			}
 			d.Anims = append(d.Anims, ani)
 		}
@@ -282,10 +334,9 @@ func (f *Reader) readMonsterDraw() (MonsterDraw, error) {
 
 func (f *Reader) readPlayerDraw() (PlayerDraw, error) {
 	d := PlayerDraw{
-		Anims: make(map[PlayerAnimType]PlayerAnim),
-		Parts: make(map[PlayerAnimPart][]ImageRef),
+		Anims: make(map[player.AnimType]*PlayerAnim),
 	}
-	var lastFrames int
+	var lastAni *PlayerAnim
 	for {
 		sect, err := f.readSect()
 		if err == io.EOF {
@@ -307,7 +358,6 @@ func (f *Reader) readPlayerDraw() (PlayerDraw, error) {
 			if err != nil {
 				return d, err
 			}
-			lastFrames = int(framesN)
 			fld8, err := f.readU8()
 			if err != nil {
 				return d, err
@@ -316,28 +366,35 @@ func (f *Reader) readPlayerDraw() (PlayerDraw, error) {
 			if err != nil {
 				return d, err
 			}
-			ani := PlayerAnim{
+			ani := &PlayerAnim{
 				FramesPerDir: framesN,
 				Field8:       fld8,
 				Field12:      fld12,
 			}
-			d.Anims[PlayerAnimType(name)] = ani
+			lastAni = ani
+			d.Anims[player.AnimType(name)] = ani
 		case "SEQU":
 			name, err := f.readString8()
 			if err != nil {
 				return d, err
 			}
-			frames := make([]ImageRef, 0, 8*lastFrames)
+			framesN := int(lastAni.FramesPerDir)
+			var dirs [8][]ImageRef
 			for i := 0; i < 8; i++ {
-				for j := 0; j < lastFrames; j++ {
+				frames := make([]ImageRef, 0, framesN)
+				for j := 0; j < framesN; j++ {
 					ref, err := f.readImageRef()
 					if err != nil {
 						return d, err
 					}
 					frames = append(frames, *ref)
 				}
+				dirs[i] = frames
 			}
-			d.Parts[PlayerAnimPart(name)] = frames
+			if lastAni.Parts == nil {
+				lastAni.Parts = make(map[player.AnimPart][8][]ImageRef)
+			}
+			lastAni.Parts[player.AnimPart(name)] = dirs
 		}
 	}
 }
@@ -407,6 +464,8 @@ func (f *Reader) readThingDraw() (Draw, error) {
 		return nil, err
 	}
 	switch dname {
+	case "", "NoDraw":
+		return nil, nil
 	case "StaticDraw", "WeaponDraw", "ArmorDraw", "BaseDraw":
 		img, err := f.readImageRef()
 		if err != nil {
@@ -470,10 +529,12 @@ func (f *Reader) readThingDraw() (Draw, error) {
 		if err := f.skipThingAnimStateDraw(); err != nil {
 			return nil, err // FIXME
 		}
+		return UnknownDraw{Type: dname}, nil
 	case "VectorAnimateDraw", "ReleasedSoulDraw":
 		if err := f.skipThingAnimVectorDraw(); err != nil {
 			return nil, err // FIXME
 		}
+		return UnknownDraw{Type: dname}, nil
 	case "MonsterDraw", "MaidenDraw":
 		d, err := f.readMonsterDraw()
 		if err != nil {
@@ -500,5 +561,5 @@ func (f *Reader) readThingDraw() (Draw, error) {
 			return nil, err
 		}
 	}
-	return nil, nil
+	return UnknownDraw{Type: dname}, nil
 }
