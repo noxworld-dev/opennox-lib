@@ -12,6 +12,41 @@ var ClassNames = []string{
 	"FLAG", "CLIENT_PERSIST", "CLIENT_PREDICT", "PICKUP",
 }
 
+var goClassNames = []string{
+	"ClassMissile",
+	"ClassMonster",
+	"ClassPlayer",
+	"ClassObstacle",
+	"ClassFood",
+	"ClassExit",
+	"ClassKey",
+	"ClassDoor",
+	"ClassInfoBook",
+	"ClassTrigger",
+	"ClassTransporter",
+	"ClassHole",
+	"ClassWand",
+	"ClassFire",
+	"ClassElevator",
+	"ClassElevatorShaft",
+	"ClassDangerous",
+	"ClassMonsterGenerator",
+	"ClassReadable",
+	"ClassLight",
+	"ClassSimple",
+	"ClassComplex",
+	"ClassImmobile",
+	"ClassVisibleEnable",
+	"ClassWeapon",
+	"ClassArmor",
+	"ClassNotStackable",
+	"ClassTreasure",
+	"ClassFlag",
+	"ClassClientPersist",
+	"ClassClientPredict",
+	"ClassPickup",
+}
+
 var _ enum[Class] = Class(0)
 
 func ParseClass(s string) (Class, error) {
@@ -80,6 +115,10 @@ func (c Class) Split() []Class {
 
 func (c Class) String() string {
 	return stringBits(uint32(c), ClassNames)
+}
+
+func (c Class) GoString() string {
+	return stringBits(uint32(c), goClassNames)
 }
 
 func (c Class) MarshalJSON() ([]byte, error) {
