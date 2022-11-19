@@ -1,5 +1,7 @@
 package ns
 
+import "github.com/noxworld-dev/opennox-lib/script/noxscript/ns/audio"
+
 // SetShopkeeperText sets shopkeeper text.
 func SetShopkeeperText(obj Obj, text StringID) {
 	// header only
@@ -12,6 +14,7 @@ const (
 	DialogNext      = DialogType("NEXT")
 	DialogYesNo     = DialogType("YESNO")
 	DialogYesNoNext = DialogType("YESNONEXT")
+	DialogFalse     = DialogType("FALSE")
 )
 
 // SetDialog sets up a conversation with object.
@@ -41,7 +44,7 @@ func StoryPic(obj Obj, name string) {
 //
 // Example:
 //		TellStory(audio.SwordsmanHurt, "Con05:OgreTalk07")
-func TellStory(audio AudioEventType, story StringID) {
+func TellStory(audio audio.Name, story StringID) {
 	// header only
 }
 

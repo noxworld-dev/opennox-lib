@@ -1,6 +1,10 @@
 package ns
 
-import "github.com/noxworld-dev/opennox-lib/script/noxscript/ns/damage"
+import (
+	"github.com/noxworld-dev/opennox-lib/script/noxscript/ns/class"
+	"github.com/noxworld-dev/opennox-lib/script/noxscript/ns/damage"
+	"github.com/noxworld-dev/opennox-lib/script/noxscript/ns/subclass"
+)
 
 type builtinObj int
 
@@ -74,19 +78,15 @@ func IsCaller(id Obj) bool {
 	return false
 }
 
-type Class = string
-
 // HasClass checks whether object has a class.
-func HasClass(id Obj, class Class) bool {
+func HasClass(id Obj, class class.Class) bool {
 	// header only
 	return false
 }
 
-type Subclass = string
-
 // HasSubclass tests whether an item has a specific subclass.
 // The subclass overlaps, so you should probably test for the class first (via HasClass).
-func HasSubclass(id Obj, subclass Subclass) bool {
+func HasSubclass(id Obj, subclass subclass.SubClass) bool {
 	// header only
 	return false
 }

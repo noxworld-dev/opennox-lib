@@ -1,5 +1,7 @@
 package spell
 
+type Spell string
+
 const (
 	INVALID                     = "SPELL_INVALID"
 	ANCHOR                      = "SPELL_ANCHOR"

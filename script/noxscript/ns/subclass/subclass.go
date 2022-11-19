@@ -1,5 +1,7 @@
 package subclass
 
+type SubClass string
+
 const (
 	HELMET                   = "HELMET"
 	SHIELD                   = "SHIELD"
@@ -14,6 +16,7 @@ const (
 	QUIVER                   = "QUIVER"
 	CROSSBOW                 = "CROSSBOW"
 	ARROW                    = "ARROW"
+	BOW                      = "BOW"
 	BOLT                     = "BOLT"
 	CHAKRAM                  = "CHAKRAM"
 	SHURIKEN                 = "SHURIKEN"

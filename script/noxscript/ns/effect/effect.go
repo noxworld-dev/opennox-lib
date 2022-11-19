@@ -1,5 +1,7 @@
 package effect
 
+type Effect string
+
 const (
 	PARTICLEFX             = "PARTICLEFX"
 	PLASMA                 = "PLASMA"

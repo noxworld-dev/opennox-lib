@@ -1,5 +1,7 @@
 package class
 
+type Class string
+
 const (
 	MISSILE          = "MISSILE"
 	MONSTER          = "MONSTER"

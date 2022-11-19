@@ -1,5 +1,7 @@
 package enchant
 
+type Enchant string
+
 const (
 	INVISIBLE                = "ENCHANT_INVISIBLE"
 	MOONGLOW                 = "ENCHANT_MOONGLOW"

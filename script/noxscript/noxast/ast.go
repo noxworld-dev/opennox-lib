@@ -16,6 +16,12 @@ import (
 	"github.com/noxworld-dev/opennox-lib/script/noxscript"
 	asm "github.com/noxworld-dev/opennox-lib/script/noxscript/noxasm"
 	"github.com/noxworld-dev/opennox-lib/script/noxscript/ns"
+	"github.com/noxworld-dev/opennox-lib/script/noxscript/ns/audio"
+	"github.com/noxworld-dev/opennox-lib/script/noxscript/ns/class"
+	"github.com/noxworld-dev/opennox-lib/script/noxscript/ns/damage"
+	"github.com/noxworld-dev/opennox-lib/script/noxscript/ns/effect"
+	"github.com/noxworld-dev/opennox-lib/script/noxscript/ns/enchant"
+	"github.com/noxworld-dev/opennox-lib/script/noxscript/ns/subclass"
 )
 
 var (
@@ -27,6 +33,14 @@ var (
 	reflObj    = reflect.TypeOf((*ns.Obj)(nil)).Elem()
 	reflWp     = reflect.TypeOf((*ns.WaypointObj)(nil)).Elem()
 )
+
+func importPathFor(v any) string {
+	t := reflect.TypeOf(v)
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+	return t.PkgPath()
+}
 
 func Translate(s *noxscript.Script) *ast.File {
 	t := &translator{
@@ -44,14 +58,18 @@ func Translate(s *noxscript.Script) *ast.File {
 	t.types.bool = ast.NewIdent("bool")
 	t.types.Obj = &ast.SelectorExpr{Sel: ast.NewIdent("Obj"), X: pkg}
 	t.types.Waypoint = &ast.SelectorExpr{Sel: ast.NewIdent("WaypointObj"), X: pkg}
-	t.f.Decls = append(t.f.Decls, &ast.GenDecl{
-		Tok: token.IMPORT,
-		Specs: []ast.Spec{
-			&ast.ImportSpec{
-				Path: stringLit(reflect.TypeOf((*ns.Handle)(nil)).Elem().PkgPath()),
-			},
-		},
-	})
+	t.imports.ns = pkg
+	t.imports.audio = ast.NewIdent("audio")
+	t.imports.effects = ast.NewIdent("effect")
+	t.imports.enchant = ast.NewIdent("enchant")
+	t.imports.class = ast.NewIdent("class")
+	t.imports.subclass = ast.NewIdent("subclass")
+	t.imports.damage = ast.NewIdent("damage")
+	t.imports.decl = &ast.GenDecl{
+		Tok:   token.IMPORT,
+		Specs: []ast.Spec{},
+	}
+	t.f.Decls = append(t.f.Decls, t.imports.decl)
 	for _, d := range builtins {
 		id := ast.NewIdent(d.Name)
 		id.Obj = &ast.Object{Name: id.Name, Data: d, Kind: ast.Fun, Type: d.Type}
@@ -183,6 +201,11 @@ func typeHintFrom(x ast.Expr) []reflect.Type {
 		return typ.Hints
 	}
 	switch x := x.(type) {
+	case *ast.BasicLit:
+		switch x.Kind {
+		case token.STRING:
+			return []reflect.Type{reflect.TypeOf("")}
+		}
 	case *ast.CallExpr:
 		if fnc := getObj(x.Fun); fnc != nil {
 			if typ, ok := fnc.Type.(reflect.Type); ok && typ.Kind() == reflect.Func {
@@ -212,6 +235,16 @@ type translator struct {
 	globals  []ast.Expr
 	funcs    []*ast.Ident
 	strings  []string
+	imports  struct {
+		decl     *ast.GenDecl
+		ns       *ast.Ident
+		audio    *ast.Ident
+		effects  *ast.Ident
+		enchant  *ast.Ident
+		class    *ast.Ident
+		subclass *ast.Ident
+		damage   *ast.Ident
+	}
 }
 
 func (t *translator) Translate() {
@@ -242,6 +275,7 @@ func (t *translator) Translate() {
 	}
 	t.inferTypes()
 	t.fixBoolAndNil()
+	t.updateImports()
 }
 
 func (t *translator) translateGlobal0(id *ast.Ident, f noxscript.FuncDef) {
@@ -252,6 +286,12 @@ func (t *translator) translateGlobal0(id *ast.Ident, f noxscript.FuncDef) {
 	}
 }
 
+func (t *translator) builtinVarPkg(name string, typ reflect.Type) ast.Expr {
+	id := ast.NewIdent(name)
+	id.Obj = &ast.Object{Kind: ast.Var, Name: id.Name, Type: typ}
+	return &ast.SelectorExpr{Sel: id, X: t.imports.ns}
+}
+
 func (t *translator) builtinVar(name string, typ reflect.Type) ast.Expr {
 	id := ast.NewIdent(name)
 	id.Obj = &ast.Object{Kind: ast.Var, Name: id.Name, Type: typ}
@@ -260,8 +300,8 @@ func (t *translator) builtinVar(name string, typ reflect.Type) ast.Expr {
 
 func (t *translator) translateGlobal1(id *ast.Ident, f noxscript.FuncDef) {
 	t.globals = append(t.globals,
-		t.builtinVar("ns.Self", reflect.TypeOf(ns.Self)),
-		t.builtinVar("ns.Other", reflect.TypeOf(ns.Other)),
+		t.builtinVarPkg("Self", reflect.TypeOf(ns.Self)),
+		t.builtinVarPkg("Other", reflect.TypeOf(ns.Other)),
 		t.builtinVar("true", reflect.TypeOf(true)),
 		t.builtinVar("false", reflect.TypeOf(false)),
 	)
@@ -421,15 +461,21 @@ func (t *translator) translateCode(d *ast.BlockStmt, ret bool, vars []ast.Expr, 
 			switch v.Op {
 			default:
 				panic(v.Op.String())
-			case asm.OpReturn:
+			case asm.OpReturn, asm.OpReturn0:
 				if ret {
-					stmt(&ast.ReturnStmt{Results: []ast.Expr{maybePop()}})
+					rv := maybePop()
+					if rn, ok := rv.(*ast.Ident); ok {
+						switch rn.Name {
+						case "false":
+							rv = intLit(0)
+						case "true":
+							rv = intLit(1)
+						}
+					}
+					stmt(&ast.ReturnStmt{Results: []ast.Expr{rv}})
 				} else {
 					stmt(&ast.ReturnStmt{})
 				}
-			case asm.OpReturn0:
-				stmt(&ast.ExprStmt{X: ast.NewIdent("/* RETURN0 */")})
-				stmt(&ast.ReturnStmt{})
 			}
 		case asm.Jump:
 			s := &ast.BranchStmt{Tok: token.GOTO, Label: labels[int(v.Off)]}
@@ -475,24 +521,64 @@ func (t *translator) translateCode(d *ast.BlockStmt, ret bool, vars []ast.Expr, 
 				x.Args[i] = a
 			}
 			switch v.Index {
-			case 9, 10: // timers
+			case asm.BuiltinSecondTimer, asm.BuiltinFrameTimer:
 				if fp, ok := asInt(x.Args[1]); ok && fp >= 0 && fp < len(t.funcs) {
 					x.Args[1] = t.funcs[fp]
 				}
-			case 46, 47: // timers with arg
+			case asm.BuiltinSecondTimerWithArg, asm.BuiltinFrameTimerWithArg:
 				if fp, ok := asInt(x.Args[2]); ok && fp >= 0 && fp < len(t.funcs) {
 					x.Args[1] = t.funcs[fp]
 				}
-			case 126: // dialogs
+			case asm.BuiltinSetDialog:
+				if s, ok := asStr(x.Args[1]); ok {
+					name := s
+					switch name {
+					case "NORMAL":
+						name = "Normal"
+					case "NEXT":
+						name = "Next"
+					case "YESNO":
+						name = "YesNo"
+					case "YESNONEXT":
+						name = "YesNoNext"
+					case "FALSE":
+						name = "False"
+					}
+					x.Args[1] = &ast.SelectorExpr{X: t.imports.ns, Sel: ast.NewIdent("Dialog" + name)}
+				}
 				if fp, ok := asInt(x.Args[2]); ok && fp >= 0 && fp < len(t.funcs) {
 					x.Args[2] = t.funcs[fp]
 				}
 				if fp, ok := asInt(x.Args[3]); ok && fp >= 0 && fp < len(t.funcs) {
 					x.Args[3] = t.funcs[fp]
 				}
-			case 190: // event callbacks
+			case asm.BuiltinSetCallback:
 				if fp, ok := asInt(x.Args[2]); ok && fp >= 0 && fp < len(t.funcs) {
 					x.Args[2] = t.funcs[fp]
+				}
+			case asm.BuiltinAudioEvent, asm.BuiltinTellStory:
+				if s, ok := asStr(x.Args[0]); ok {
+					x.Args[0] = &ast.SelectorExpr{X: t.imports.audio, Sel: ast.NewIdent(s)}
+				}
+			case asm.BuiltinEffect:
+				if s, ok := asStr(x.Args[0]); ok {
+					x.Args[0] = &ast.SelectorExpr{X: t.imports.effects, Sel: ast.NewIdent(s)}
+				}
+			case asm.BuiltinEnchant, asm.BuiltinEnchantOff, asm.BuiltinHasEnchant:
+				if s, ok := asStr(x.Args[1]); ok && strings.HasPrefix(s, "ENCHANT_") {
+					x.Args[1] = &ast.SelectorExpr{X: t.imports.enchant, Sel: ast.NewIdent(strings.TrimPrefix(s, "ENCHANT_"))}
+				}
+			case asm.BuiltinHasClass:
+				if s, ok := asStr(x.Args[1]); ok {
+					x.Args[1] = &ast.SelectorExpr{X: t.imports.class, Sel: ast.NewIdent(s)}
+				}
+			case asm.BuiltinHasSubclass:
+				if s, ok := asStr(x.Args[1]); ok {
+					x.Args[1] = &ast.SelectorExpr{X: t.imports.subclass, Sel: ast.NewIdent(s)}
+				}
+			case asm.BuiltinDamage:
+				if i, ok := asInt(x.Args[3]); ok {
+					x.Args[3] = &ast.SelectorExpr{X: t.imports.damage, Sel: ast.NewIdent(damage.Type(i).String())}
 				}
 			}
 			if rt.NumOut() > 0 {
@@ -693,6 +779,16 @@ func (t *translator) translateCode(d *ast.BlockStmt, ret bool, vars []ast.Expr, 
 				op = token.AND
 			case asm.OpIntOr:
 				op = token.OR
+				swap := 0
+				if lhs, ok := lhs.(*ast.BinaryExpr); ok && isLogicalOp(lhs.Op) {
+					swap++
+				}
+				if rhs, ok := rhs.(*ast.BinaryExpr); ok && isLogicalOp(rhs.Op) {
+					swap++
+				}
+				if swap == 2 {
+					op = token.LOR
+				}
 			case asm.OpIntXOr:
 				op = token.XOR
 			case asm.OpIntLSh:
@@ -734,8 +830,17 @@ func (t *translator) translateCode(d *ast.BlockStmt, ret bool, vars []ast.Expr, 
 	}
 }
 
+func isLogicalOp(op token.Token) bool {
+	switch op {
+	case token.EQL, token.NEQ, token.LSS, token.GTR, token.LEQ, token.GEQ, token.LAND, token.LOR:
+		return true
+	}
+	return false
+}
+
 func (t *translator) simplifyCode(d *ast.BlockStmt, ret bool) {
 	t.removeSingleDefines(d)
+	t.makeSwitches(d)
 	t.makeLoops(d)
 	if !ret {
 		t.removeLastReturn(d)
@@ -792,6 +897,131 @@ func (t *translator) removeSingleDefines(d *ast.BlockStmt) {
 		i -= 2 // check previous again
 	}
 }
+func (t *translator) makeSwitches(d *ast.BlockStmt) {
+	if true {
+		return
+	}
+	for i := 0; i < len(d.List); i++ {
+		// It usually starts with a temporary var assignment, which will be used in switch.
+		var label *ast.Ident
+		init, ok := d.List[i].(*ast.AssignStmt)
+		if !ok {
+			l, lok := d.List[i].(*ast.LabeledStmt)
+			if !lok {
+				continue
+			}
+			label = l.Label
+			init, ok = l.Stmt.(*ast.AssignStmt)
+		}
+		if !ok || init.Tok != token.ASSIGN {
+			continue
+		}
+
+		vr := init.Lhs[0]
+		// Then N if statements should follow. Each has a single goto statement.
+		var (
+			cases   []ast.Expr
+			targets []*ast.Ident
+		)
+		for _, st := range d.List[i+1:] {
+			ifs, ok := st.(*ast.IfStmt)
+			if !ok || ifs.Init != nil || ifs.Else != nil || len(ifs.Body.List) != 1 {
+				break
+			}
+			cond, ok := ifs.Cond.(*ast.BinaryExpr)
+			if !ok || cond.Op != token.EQL || cond.X != vr {
+				break
+			}
+			targ, ok := ifs.Body.List[0].(*ast.BranchStmt)
+			if !ok || targ.Tok != token.GOTO {
+				break
+			}
+			cases = append(cases, cond.Y)
+			targets = append(targets, targ.Label)
+		}
+		if len(cases) == 0 {
+			continue
+		}
+		// It ends with another goto statement (a default branch of switch).
+		def, ok := d.List[i+1+len(cases)].(*ast.BranchStmt)
+		if !ok || def.Tok != token.GOTO {
+			continue
+		}
+		// First we will just combine everything that we already found, and then we will try to simplify it.
+		sw := &ast.SwitchStmt{
+			Init: init, Tag: vr,
+			Body: &ast.BlockStmt{},
+		}
+		for j := range cases {
+			sw.Body.List = append(sw.Body.List, &ast.CaseClause{
+				List: []ast.Expr{cases[j]},
+				Body: []ast.Stmt{&ast.BranchStmt{Tok: token.GOTO, Label: targets[j]}},
+			})
+		}
+		sw.Body.List = append(sw.Body.List, &ast.CaseClause{
+			Body: []ast.Stmt{&ast.BranchStmt{Tok: token.GOTO, Label: def.Label}},
+		})
+		var st ast.Stmt = sw
+		if label != nil {
+			st = &ast.LabeledStmt{Label: label, Stmt: st}
+		}
+		d.List[i] = st
+		d.List = append(d.List[:i+1], d.List[i+1+len(cases)+1:]...)
+		//continue
+
+		// Now try to find switch case bodies and move them inside.
+		off := 1
+	casesLoop:
+		for j := 0; j < len(cases)+1 && i+off < len(d.List); j++ {
+			l, ok := d.List[i+off].(*ast.LabeledStmt)
+			if !ok {
+				break
+			}
+			if cntUsages(&ast.BlockStmt{List: d.List[:i]}, l.Label)+
+				cntUsages(&ast.BlockStmt{List: d.List[i+1 : i+off]}, l.Label)+
+				cntUsages(&ast.BlockStmt{List: d.List[i+off+1:]}, l.Label) != 0 {
+				break
+			}
+			off++
+			var body []ast.Stmt
+			body = append(body, l.Stmt)
+			if st, ok := l.Stmt.(*ast.BranchStmt); ok && st.Tok == token.GOTO {
+				sw.Body.List[j].(*ast.CaseClause).Body = body
+				continue
+			}
+			for i+off < len(d.List) {
+				st := d.List[i+off]
+				off++
+				body = append(body, st)
+				if st, ok := st.(*ast.BranchStmt); ok && st.Tok == token.GOTO {
+					sw.Body.List[j].(*ast.CaseClause).Body = body
+					continue casesLoop
+				}
+			}
+		}
+		if off > 1 {
+			d.List = append(d.List[:i+1], d.List[i+off:]...)
+		}
+
+		// If we find label right after the switch and corresponding goto in cases, we can remove gotos.
+		if i+1 < len(d.List) {
+			if l, ok := d.List[i+1].(*ast.LabeledStmt); ok {
+				for j := range sw.Body.List {
+					c := sw.Body.List[j].(*ast.CaseClause)
+					n := len(c.Body)
+					if gt, ok := c.Body[n-1].(*ast.BranchStmt); ok && gt.Tok == token.GOTO && gt.Label == l.Label {
+						c.Body = c.Body[:n-1]
+					}
+				}
+			}
+		}
+
+		// If default branch is now empty - remove it
+		if c := sw.Body.List[len(sw.Body.List)-1].(*ast.CaseClause); len(c.List) == 0 && len(c.Body) == 0 {
+			sw.Body.List = sw.Body.List[:len(sw.Body.List)-1]
+		}
+	}
+}
 func (t *translator) makeLoops(d *ast.BlockStmt) {
 loops:
 	for i := 0; i < len(d.List); i++ {
@@ -844,23 +1074,21 @@ func (t *translator) removeUnusedDefines(d *ast.BlockStmt) {
 		}
 	}
 }
-func (t *translator) removeUnusedLabels(d *ast.BlockStmt) {
-	for i := 0; i < len(d.List); i++ {
-		l, ok := d.List[i].(*ast.LabeledStmt)
-		if !ok {
-			continue
-		}
-		used := cntUsages(l.Stmt, l.Label) > 0
-		for j := 0; j < len(d.List); j++ {
-			if i == j {
-				continue
+func (t *translator) removeUnusedLabels(root *ast.BlockStmt) {
+	ast.Inspect(root, func(n ast.Node) bool {
+		if d, ok := n.(*ast.BlockStmt); ok {
+			for i := 0; i < len(d.List); i++ {
+				l, ok := d.List[i].(*ast.LabeledStmt)
+				if !ok {
+					continue
+				}
+				if cntUsages(root, l.Label) == 1 {
+					d.List[i] = l.Stmt
+				}
 			}
-			used = used || cntUsages(d.List[j], l.Label) > 0
 		}
-		if !used {
-			d.List[i] = l.Stmt
-		}
-	}
+		return true
+	})
 }
 func (t *translator) fixUnusedVars(d *ast.BlockStmt) {
 	for i := 0; i < len(d.List); i++ {
@@ -962,7 +1190,7 @@ func (t *translator) inferTypeOf(v ast.Expr) {
 		if rt.Implements(reflObj) {
 			pref = "obj"
 		}
-		typ = &ast.SelectorExpr{Sel: ast.NewIdent(rt.Name()), X: ast.NewIdent("ns")}
+		typ = &ast.SelectorExpr{Sel: ast.NewIdent(rt.Name()), X: t.imports.ns}
 	}
 	name := obj.Name
 	if strings.HasPrefix(name, "gvar") {
@@ -1064,6 +1292,66 @@ func (t *translator) fixBoolAndNil() {
 		return true
 	})
 }
+func (t *translator) updateImports() {
+	var used struct {
+		ns       int
+		audio    int
+		effects  int
+		enchant  int
+		class    int
+		subclass int
+		damage   int
+	}
+	ast.Inspect(t.f, func(n ast.Node) bool {
+		switch n {
+		case t.imports.ns:
+			used.ns++
+		case t.imports.audio:
+			used.audio++
+		case t.imports.effects:
+			used.effects++
+		case t.imports.enchant:
+			used.enchant++
+		case t.imports.class:
+			used.class++
+		case t.imports.subclass:
+			used.subclass++
+		case t.imports.damage:
+			used.damage++
+		}
+		return true
+	})
+	var add []string
+	if used.ns != 0 {
+		add = append(add, importPathFor((*ns.Handle)(nil)))
+	}
+	if used.audio != 0 {
+		add = append(add, importPathFor(audio.Name("")))
+	}
+	if used.effects != 0 {
+		add = append(add, importPathFor(effect.Effect("")))
+	}
+	if used.enchant != 0 {
+		add = append(add, importPathFor(enchant.Enchant("")))
+	}
+	if used.class != 0 {
+		add = append(add, importPathFor(class.Class("")))
+	}
+	if used.subclass != 0 {
+		add = append(add, importPathFor(subclass.SubClass("")))
+	}
+	if used.damage != 0 {
+		add = append(add, importPathFor(damage.Type(0)))
+	}
+	for _, path := range add {
+		t.imports.decl.Specs = append(t.imports.decl.Specs, &ast.ImportSpec{
+			Path: stringLit(path),
+		})
+	}
+	if len(t.imports.decl.Specs) == 0 {
+		t.f.Decls = t.f.Decls[1:]
+	}
+}
 
 func replace(n ast.Node, from, to ast.Expr) int {
 	var cnt int
@@ -1150,6 +1438,11 @@ func getObj(x ast.Expr) *ast.Object {
 
 func getType(x ast.Expr) any {
 	switch x := x.(type) {
+	case *ast.BasicLit:
+		switch x.Kind {
+		case token.STRING:
+			return reflect.TypeOf("")
+		}
 	case *ast.IndexExpr:
 		if obj := getObj(x.X); obj != nil {
 			return obj.Type
@@ -1177,6 +1470,20 @@ func asInt(x ast.Expr) (int, bool) {
 		}
 	}
 	return 0, false
+}
+
+func asStr(x ast.Expr) (string, bool) {
+	switch x := x.(type) {
+	case *ast.BasicLit:
+		if x.Kind == token.STRING {
+			v, err := strconv.Unquote(x.Value)
+			if err != nil {
+				return "", false
+			}
+			return v, true
+		}
+	}
+	return "", false
 }
 
 func floatLit(v float32) *ast.BasicLit {

@@ -449,7 +449,7 @@ func (v Index) String() string {
 }
 
 type CallBuiltin struct {
-	Index int32
+	Index Builtin
 }
 
 func (v CallBuiltin) OpCode() Op {
@@ -544,7 +544,7 @@ func DecodeNext(code []uint32) (Instr, int) {
 	case OpCallBuiltin:
 		v := CallBuiltin{}
 		if len(code) >= 1 {
-			v.Index = int32(code[0])
+			v.Index = Builtin(code[0])
 			n++
 		}
 		return v, n

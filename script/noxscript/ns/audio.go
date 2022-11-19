@@ -1,9 +1,9 @@
 package ns
 
-type AudioEventType = string
+import "github.com/noxworld-dev/opennox-lib/script/noxscript/ns/audio"
 
 // AudioEvent play an audio event at a location.
-func AudioEvent(audio AudioEventType, wp WaypointObj) {
+func AudioEvent(audio audio.Name, wp WaypointObj) {
 	// header only
 }
 
