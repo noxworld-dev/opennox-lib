@@ -5,6 +5,10 @@ import (
 	"math"
 )
 
+func Ptf(x, y float32) Pointf {
+	return Pointf{X: x, Y: y}
+}
+
 func Point2f(p image.Point) Pointf {
 	return Pointf{
 		X: float32(p.X),

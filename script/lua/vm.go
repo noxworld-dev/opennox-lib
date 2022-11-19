@@ -22,6 +22,22 @@ var (
 	Log = log.New("lua")
 )
 
+func init() {
+	script.RegisterVM(script.VMRuntime{
+		Name: "lua", Title: "LUA interpreter", Log: Log,
+		NewMap: func(g script.Game, maps string, name string) (script.VM, error) {
+			vm := NewVM(g, filepath.Join(maps, name))
+			err := vm.ExecFile(filepath.Join(maps, name, name+".lua"))
+			if os.IsNotExist(err) {
+				return vm, nil // still run the empty script for commands
+			} else if err != nil {
+				return nil, err
+			}
+			return vm, nil
+		},
+	})
+}
+
 var _ script.VM = (*VM)(nil)
 
 type VM struct {
@@ -62,7 +78,7 @@ func (vm *VM) InitAPI(global string, fnc APIFunc) *lua.LTable {
 	return t
 }
 
-func (vm *VM) InitDefault() {
+func (vm *VM) initDefault() {
 	if err := vm.Exec(`Nox = require("Nox.Map.Script.v0")`); err != nil {
 		panic(err)
 	}
@@ -77,6 +93,7 @@ func (vm *VM) ExecFile(path string) error {
 	err := vm.s.DoFile(path)
 	if e, ok := err.(*lua.ApiError); ok {
 		if os.IsNotExist(e.Cause) {
+			vm.initDefault()
 			return e.Cause
 		}
 	}

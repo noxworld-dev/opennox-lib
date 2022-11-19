@@ -7,6 +7,13 @@ import (
 	"github.com/noxworld-dev/opennox-lib/types"
 )
 
+var global Game = BaseGame{}
+
+// Runtime returns a global runtime instance.
+func Runtime() Game {
+	return global
+}
+
 type Game interface {
 	TimeSource
 

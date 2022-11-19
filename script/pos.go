@@ -22,6 +22,12 @@ type Positioner interface {
 	Pos() types.Pointf
 }
 
+// ZPositioner is an interface for objects that has Z position.
+type ZPositioner interface {
+	// Z returns current Z offset for the object.
+	Z() float32
+}
+
 // GridPositioner is an interface for objects that has position on the map.
 type GridPositioner interface {
 	// GridPos returns current position of the object on the grid.
@@ -48,8 +54,7 @@ func SetPos(obj PositionSetter, to Positioner) {
 // Raisable is an interface for positionable objects that can also be raised or lowered by Z axis.
 type Raisable interface {
 	Positionable
-	// Z returns current Z offset for the object.
-	Z() float32
+	ZPositioner
 	// SetZ sets Z offset for the object.
 	SetZ(z float32)
 }
