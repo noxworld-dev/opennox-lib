@@ -1,10 +1,9 @@
-package sdl
+package opengl
 
 import (
 	"image"
 
 	"github.com/go-gl/gl/v3.3-core/gl"
-	"github.com/veandco/go-sdl2/sdl"
 
 	"github.com/noxworld-dev/opennox-lib/client/seat"
 	"github.com/noxworld-dev/opennox-lib/noximage"
@@ -33,8 +32,8 @@ type Surface struct {
 	tex uint32
 }
 
-func (s *Surface) rect() *sdl.Rect {
-	return &sdl.Rect{W: int32(s.sz.X), H: int32(s.sz.Y)}
+func (s *Surface) rect() image.Point {
+	return s.sz
 }
 
 func (s *Surface) Update(img *noximage.Image16) {
