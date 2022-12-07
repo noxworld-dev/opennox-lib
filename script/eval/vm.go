@@ -11,6 +11,7 @@ import (
 	"github.com/noxworld-dev/opennox-lib/log"
 	"github.com/noxworld-dev/opennox-lib/script"
 	"github.com/noxworld-dev/opennox-lib/script/eval/imports"
+	"github.com/noxworld-dev/opennox-lib/script/noxscript/ns"
 )
 
 var (
@@ -81,6 +82,10 @@ func NewVM(g script.Game, dir string) *VM {
 	})}
 	vm.addPrinters(stdout, stderr)
 	vm.initPackages()
+	// TODO: actually override all exported methods of VM to point to this game pointer
+	if nsg, ok := g.(ns.Game); ok {
+		ns.SetRuntime(nsg.NoxScript())
+	}
 	return vm
 }
 

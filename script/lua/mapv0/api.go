@@ -116,7 +116,7 @@ func (vm *api) luaValueTo(s *lua.LState, li int, rt reflect.Type) (out reflect.V
 			x := s.CheckNumber(li + 0)
 			y := s.CheckNumber(li + 1)
 			di++
-			out = reflect.ValueOf(script.StaticPos{X: float32(x), Y: float32(y)})
+			out = reflect.ValueOf(types.Pointf{X: float32(x), Y: float32(y)})
 		default:
 			if s.Get(li) == lua.LNil {
 				out = reflect.Zero(rtPositioner)

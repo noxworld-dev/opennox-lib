@@ -4,7 +4,10 @@ import "github.com/noxworld-dev/opennox-lib/script/noxscript/ns/audio"
 
 // SetShopkeeperText sets shopkeeper text.
 func SetShopkeeperText(obj Obj, text StringID) {
-	// header only
+	if impl == nil {
+		return
+	}
+	impl.SetShopkeeperText(obj, text)
 }
 
 type DialogType string
@@ -24,17 +27,26 @@ const (
 //
 // If using a DialogYesNo conversation, the end script function should use GetAnswer to retrieve the result.
 func SetDialog(obj Obj, typ DialogType, start Func, end Func) {
-	// header only
+	if impl == nil {
+		return
+	}
+	impl.SetDialog(obj, typ, start, end)
 }
 
 // CancelDialog cancels a conversation with object.
 func CancelDialog(obj Obj) {
-	// header only
+	if impl == nil {
+		return
+	}
+	impl.CancelDialog(obj)
 }
 
 // StoryPic assigns a picture to a conversation.
 func StoryPic(obj Obj, name string) {
-	// header only
+	if impl == nil {
+		return
+	}
+	impl.StoryPic(obj, name)
 }
 
 // TellStory causes the telling of a story.
@@ -45,14 +57,20 @@ func StoryPic(obj Obj, name string) {
 // Example:
 //		TellStory(audio.SwordsmanHurt, "Con05:OgreTalk07")
 func TellStory(audio audio.Name, story StringID) {
-	// header only
+	if impl == nil {
+		return
+	}
+	impl.TellStory(audio, story)
 }
 
 // StartDialog starts a conversation between two objects.
 //
 // This requires that SetDialog has already been used to set up the conversation on the object.
 func StartDialog(obj Obj, other Obj) {
-	// header only
+	if impl == nil {
+		return
+	}
+	impl.StartDialog(obj, other)
 }
 
 type DialogAnswer int
@@ -65,6 +83,8 @@ const (
 
 // GetAnswer gets answer from conversation.
 func GetAnswer(obj Obj) DialogAnswer {
-	// header only
-	return 0
+	if impl == nil {
+		return 0
+	}
+	return impl.GetAnswer(obj)
 }

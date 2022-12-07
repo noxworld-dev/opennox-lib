@@ -21,6 +21,10 @@ type Pointf struct {
 	Y float32 `json:"y"`
 }
 
+func (p Pointf) Pos() Pointf {
+	return p
+}
+
 func (p Pointf) Point() image.Point {
 	return image.Point{
 		X: int(p.X),
@@ -54,7 +58,7 @@ func (p Pointf) Div(v float32) Pointf {
 
 func (p Pointf) Len() float64 {
 	x, y := float64(p.X), float64(p.Y)
-	return math.Sqrt(x*x + y*y)
+	return math.Hypot(x, y)
 }
 
 func (p Pointf) Normalize() Pointf {

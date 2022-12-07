@@ -4,15 +4,15 @@ import (
 	"bytes"
 	"fmt"
 	"go/ast"
-	"go/format"
 	"go/token"
 	"log"
 	"math"
 	"os"
 	"reflect"
-	"strconv"
 	"strings"
 
+	"github.com/noxworld-dev/opennox-lib/object"
+	"github.com/noxworld-dev/opennox-lib/script"
 	"github.com/noxworld-dev/opennox-lib/script/noxscript"
 	asm "github.com/noxworld-dev/opennox-lib/script/noxscript/noxasm"
 	"github.com/noxworld-dev/opennox-lib/script/noxscript/ns"
@@ -21,7 +21,9 @@ import (
 	"github.com/noxworld-dev/opennox-lib/script/noxscript/ns/damage"
 	"github.com/noxworld-dev/opennox-lib/script/noxscript/ns/effect"
 	"github.com/noxworld-dev/opennox-lib/script/noxscript/ns/enchant"
+	"github.com/noxworld-dev/opennox-lib/script/noxscript/ns/spell"
 	"github.com/noxworld-dev/opennox-lib/script/noxscript/ns/subclass"
+	"github.com/noxworld-dev/opennox-lib/types"
 )
 
 var (
@@ -32,6 +34,7 @@ var (
 	reflAny    = reflect.TypeOf((*any)(nil)).Elem()
 	reflObj    = reflect.TypeOf((*ns.Obj)(nil)).Elem()
 	reflWp     = reflect.TypeOf((*ns.WaypointObj)(nil)).Elem()
+	reflPos    = reflect.TypeOf((*script.Positioner)(nil)).Elem()
 )
 
 func importPathFor(v any) string {
@@ -56,10 +59,18 @@ func Translate(s *noxscript.Script) *ast.File {
 	t.types.float = ast.NewIdent("float32")
 	t.types.string = ast.NewIdent("string")
 	t.types.bool = ast.NewIdent("bool")
+	t.types.true = t.builtinVar("true", reflect.TypeOf(true))
+	t.types.false = t.builtinVar("false", reflect.TypeOf(false))
 	t.types.Obj = &ast.SelectorExpr{Sel: ast.NewIdent("Obj"), X: pkg}
 	t.types.Waypoint = &ast.SelectorExpr{Sel: ast.NewIdent("WaypointObj"), X: pkg}
 	t.imports.ns = pkg
+	t.imports.time = ast.NewIdent("time")
+	t.imports.strconv = ast.NewIdent("strconv")
+	t.imports.script = ast.NewIdent("script")
+	t.imports.object = ast.NewIdent("object")
+	t.imports.types = ast.NewIdent("types")
 	t.imports.audio = ast.NewIdent("audio")
+	t.imports.spell = ast.NewIdent("spell")
 	t.imports.effects = ast.NewIdent("effect")
 	t.imports.enchant = ast.NewIdent("enchant")
 	t.imports.class = ast.NewIdent("class")
@@ -71,6 +82,10 @@ func Translate(s *noxscript.Script) *ast.File {
 	}
 	t.f.Decls = append(t.f.Decls, t.imports.decl)
 	for _, d := range builtins {
+		if d == nil {
+			t.builtins = append(t.builtins, nil)
+			continue
+		}
 		id := ast.NewIdent(d.Name)
 		id.Obj = &ast.Object{Name: id.Name, Data: d, Kind: ast.Fun, Type: d.Type}
 		t.builtins = append(t.builtins, &ast.SelectorExpr{Sel: id, X: pkg})
@@ -102,7 +117,22 @@ func (s *TypeSet) AllHasKind(k reflect.Kind) bool {
 	return len(s.Hints) != 0
 }
 
+func (s *TypeSet) AllHasKindExcept(k reflect.Kind, exc int) bool {
+	for i, h := range s.Hints {
+		if i == exc {
+			continue
+		}
+		if h.Kind() != k {
+			return false
+		}
+	}
+	return len(s.Hints) > 1
+}
+
 func (s *TypeSet) AllImplements(t reflect.Type) bool {
+	if t.Kind() != reflect.Interface {
+		return false
+	}
 	for _, h := range s.Hints {
 		if !h.Implements(t) {
 			return false
@@ -129,18 +159,26 @@ func (s *TypeSet) GetWithKind(k reflect.Kind) (reflect.Type, bool) {
 	return nil, false
 }
 
+func (s *TypeSet) optimize() {
+	for i := 0; i < len(s.Hints) && len(s.Hints) > 1; i++ {
+		t1 := s.Hints[i]
+		if s.AllImplements(t1) || (t1 == reflBool && s.AllHasKindExcept(reflect.Interface, i)) {
+			s.Hints = append(s.Hints[:i], s.Hints[i+1:]...)
+			i--
+		}
+	}
+}
+
 func (s *TypeSet) Add(types ...reflect.Type) {
 	for _, t := range types {
-		if t == reflAny {
+		if t == reflAny || s.Has(t) {
 			continue
 		}
-		if t == reflect.TypeOf(ns.Self) && t != reflObj {
-			t = reflObj
-		}
-		if !s.Has(t) {
+		if !s.AllImplements(t) {
 			s.Hints = append(s.Hints, t)
 		}
 	}
+	s.optimize()
 }
 
 func (s *TypeSet) Best() (reflect.Type, bool) {
@@ -161,6 +199,12 @@ func (s *TypeSet) Best() (reflect.Type, bool) {
 	}
 	if s.Has(reflObj) && s.Has(reflWp) {
 		return reflWp, true
+	}
+	if s.Has(reflWp) && s.Has(reflPos) {
+		return reflWp, true
+	}
+	if s.Has(reflObj) && s.Has(reflPos) {
+		return reflObj, true
 	}
 	if s.AllHasKind(reflect.Interface) && s.AllImplements(reflObj) {
 		return reflObj, true
@@ -226,6 +270,8 @@ type translator struct {
 		nil      *ast.Ident
 		int      *ast.Ident
 		bool     *ast.Ident
+		true     *ast.Ident
+		false    *ast.Ident
 		float    *ast.Ident
 		string   *ast.Ident
 		Obj      ast.Expr
@@ -237,8 +283,14 @@ type translator struct {
 	strings  []string
 	imports  struct {
 		decl     *ast.GenDecl
+		time     *ast.Ident
+		strconv  *ast.Ident
+		script   *ast.Ident
+		object   *ast.Ident
+		types    *ast.Ident
 		ns       *ast.Ident
 		audio    *ast.Ident
+		spell    *ast.Ident
 		effects  *ast.Ident
 		enchant  *ast.Ident
 		class    *ast.Ident
@@ -292,7 +344,7 @@ func (t *translator) builtinVarPkg(name string, typ reflect.Type) ast.Expr {
 	return &ast.SelectorExpr{Sel: id, X: t.imports.ns}
 }
 
-func (t *translator) builtinVar(name string, typ reflect.Type) ast.Expr {
+func (t *translator) builtinVar(name string, typ reflect.Type) *ast.Ident {
 	id := ast.NewIdent(name)
 	id.Obj = &ast.Object{Kind: ast.Var, Name: id.Name, Type: typ}
 	return id
@@ -300,10 +352,10 @@ func (t *translator) builtinVar(name string, typ reflect.Type) ast.Expr {
 
 func (t *translator) translateGlobal1(id *ast.Ident, f noxscript.FuncDef) {
 	t.globals = append(t.globals,
-		t.builtinVarPkg("Self", reflect.TypeOf(ns.Self)),
-		t.builtinVarPkg("Other", reflect.TypeOf(ns.Other)),
-		t.builtinVar("true", reflect.TypeOf(true)),
-		t.builtinVar("false", reflect.TypeOf(false)),
+		&ast.CallExpr{Fun: t.builtins[asm.BuiltinGetTrigger]},
+		&ast.CallExpr{Fun: t.builtins[asm.BuiltinGetCaller]},
+		t.types.true,
+		t.types.false,
 	)
 	if len(f.Vars) > 4 {
 		d := &ast.GenDecl{Tok: token.VAR}
@@ -374,6 +426,62 @@ func (t *translator) translateFunc(d *ast.FuncDecl, f noxscript.FuncDef, global 
 }
 
 type temporary struct{}
+
+func (t *translator) asPos(x, y ast.Expr) (ast.Expr, bool) {
+	var pos ast.Expr = &ast.CallExpr{
+		Fun:  &ast.SelectorExpr{X: t.imports.types, Sel: ast.NewIdent("Ptf")},
+		Args: []ast.Expr{x, y},
+	}
+	sx, okx := x.(*ast.SelectorExpr)
+	sy, oky := y.(*ast.SelectorExpr)
+	if !okx || !oky {
+		bx, okx := x.(*ast.BinaryExpr)
+		by, oky := y.(*ast.BinaryExpr)
+		if !okx || !oky || bx.Op != by.Op {
+			return pos, false
+		}
+		p1, ok1 := t.asPos(bx.X, by.X)
+		p2, ok2 := t.asPos(bx.Y, by.Y)
+		if !ok1 && !ok2 {
+			return pos, false
+		}
+		fnc := ""
+		switch bx.Op {
+		default:
+			return pos, false
+		case token.ADD:
+			fnc = "Add"
+		case token.SUB:
+			fnc = "Sub"
+		}
+		return &ast.CallExpr{
+			Fun:  &ast.SelectorExpr{X: p1, Sel: ast.NewIdent(fnc)},
+			Args: []ast.Expr{p2},
+		}, true
+	}
+	if sx.Sel.Name != "X" || sy.Sel.Name != "Y" {
+		return pos, false
+	}
+	fx, okx := sx.X.(*ast.CallExpr)
+	fy, oky := sy.X.(*ast.CallExpr)
+	if !okx || !oky || len(fx.Args) != 0 || len(fy.Args) != 0 {
+		return pos, false
+	}
+	sx, okx = fx.Fun.(*ast.SelectorExpr)
+	sy, oky = fy.Fun.(*ast.SelectorExpr)
+	if !okx || !oky || sx.Sel.Name != "Pos" || sy.Sel.Name != "Pos" {
+		return pos, false
+	}
+	if sx.X == sy.X {
+		return fx, true
+	}
+	idx, okx := sx.X.(*ast.Ident)
+	idy, oky := sy.X.(*ast.Ident)
+	if !okx || !oky || idx.Name != idy.Name {
+		return pos, false
+	}
+	return fx, true
+}
 
 func (t *translator) translateCode(d *ast.BlockStmt, ret bool, vars []ast.Expr, code []uint32) {
 	list, err := asm.Decode(code)
@@ -503,14 +611,8 @@ func (t *translator) translateCode(d *ast.BlockStmt, ret bool, vars []ast.Expr, 
 				stmt(&ast.ExprStmt{X: x})
 			}
 		case asm.CallBuiltin:
-			var fnc ast.Expr
-			if v.Index >= 0 && int(v.Index) < len(builtins) {
-				fnc = t.builtins[v.Index]
-			} else {
-				fnc = ast.NewIdent(fmt.Sprintf("builtin_overflow_%d", uint32(v.Index)))
-			}
-			rt, _ := getType(fnc).(reflect.Type)
-			x := &ast.CallExpr{Fun: fnc, Args: make([]ast.Expr, rt.NumIn())}
+			rt, call := t.callBuiltin(v.Index)
+			args := make([]ast.Expr, rt.NumIn())
 			for i := rt.NumIn() - 1; i >= 0; i-- {
 				a := pop()
 				at := rt.In(i)
@@ -518,69 +620,9 @@ func (t *translator) translateCode(d *ast.BlockStmt, ret bool, vars []ast.Expr, 
 				if val, ok := asInt(a); ok && val == 0 && at.Kind() == reflect.Interface {
 					a = t.types.nil
 				}
-				x.Args[i] = a
+				args[i] = a
 			}
-			switch v.Index {
-			case asm.BuiltinSecondTimer, asm.BuiltinFrameTimer:
-				if fp, ok := asInt(x.Args[1]); ok && fp >= 0 && fp < len(t.funcs) {
-					x.Args[1] = t.funcs[fp]
-				}
-			case asm.BuiltinSecondTimerWithArg, asm.BuiltinFrameTimerWithArg:
-				if fp, ok := asInt(x.Args[2]); ok && fp >= 0 && fp < len(t.funcs) {
-					x.Args[1] = t.funcs[fp]
-				}
-			case asm.BuiltinSetDialog:
-				if s, ok := asStr(x.Args[1]); ok {
-					name := s
-					switch name {
-					case "NORMAL":
-						name = "Normal"
-					case "NEXT":
-						name = "Next"
-					case "YESNO":
-						name = "YesNo"
-					case "YESNONEXT":
-						name = "YesNoNext"
-					case "FALSE":
-						name = "False"
-					}
-					x.Args[1] = &ast.SelectorExpr{X: t.imports.ns, Sel: ast.NewIdent("Dialog" + name)}
-				}
-				if fp, ok := asInt(x.Args[2]); ok && fp >= 0 && fp < len(t.funcs) {
-					x.Args[2] = t.funcs[fp]
-				}
-				if fp, ok := asInt(x.Args[3]); ok && fp >= 0 && fp < len(t.funcs) {
-					x.Args[3] = t.funcs[fp]
-				}
-			case asm.BuiltinSetCallback:
-				if fp, ok := asInt(x.Args[2]); ok && fp >= 0 && fp < len(t.funcs) {
-					x.Args[2] = t.funcs[fp]
-				}
-			case asm.BuiltinAudioEvent, asm.BuiltinTellStory:
-				if s, ok := asStr(x.Args[0]); ok {
-					x.Args[0] = &ast.SelectorExpr{X: t.imports.audio, Sel: ast.NewIdent(s)}
-				}
-			case asm.BuiltinEffect:
-				if s, ok := asStr(x.Args[0]); ok {
-					x.Args[0] = &ast.SelectorExpr{X: t.imports.effects, Sel: ast.NewIdent(s)}
-				}
-			case asm.BuiltinEnchant, asm.BuiltinEnchantOff, asm.BuiltinHasEnchant:
-				if s, ok := asStr(x.Args[1]); ok && strings.HasPrefix(s, "ENCHANT_") {
-					x.Args[1] = &ast.SelectorExpr{X: t.imports.enchant, Sel: ast.NewIdent(strings.TrimPrefix(s, "ENCHANT_"))}
-				}
-			case asm.BuiltinHasClass:
-				if s, ok := asStr(x.Args[1]); ok {
-					x.Args[1] = &ast.SelectorExpr{X: t.imports.class, Sel: ast.NewIdent(s)}
-				}
-			case asm.BuiltinHasSubclass:
-				if s, ok := asStr(x.Args[1]); ok {
-					x.Args[1] = &ast.SelectorExpr{X: t.imports.subclass, Sel: ast.NewIdent(s)}
-				}
-			case asm.BuiltinDamage:
-				if i, ok := asInt(x.Args[3]); ok {
-					x.Args[3] = &ast.SelectorExpr{X: t.imports.damage, Sel: ast.NewIdent(damage.Type(i).String())}
-				}
-			}
+			x := call(args)
 			if rt.NumOut() > 0 {
 				push(tmpVar(x))
 			} else {
@@ -840,6 +882,7 @@ func isLogicalOp(op token.Token) bool {
 
 func (t *translator) simplifyCode(d *ast.BlockStmt, ret bool) {
 	t.removeSingleDefines(d)
+	t.simplifyPos(d)
 	t.makeSwitches(d)
 	t.makeLoops(d)
 	if !ret {
@@ -896,6 +939,28 @@ func (t *translator) removeSingleDefines(d *ast.BlockStmt) {
 		}
 		i -= 2 // check previous again
 	}
+}
+func (t *translator) simplifyPos(d *ast.BlockStmt) {
+	ast.Inspect(d, func(n ast.Node) bool {
+		call, ok := n.(*ast.CallExpr)
+		if !ok {
+			return true
+		}
+		for i, x := range call.Args {
+			ptf, ok := x.(*ast.CallExpr)
+			if !ok || len(ptf.Args) != 2 {
+				continue
+			}
+			typ, ok := ptf.Fun.(*ast.SelectorExpr)
+			if !ok || typ.X != t.imports.types || typ.Sel.Name != "Ptf" {
+				continue
+			}
+			if pos, ok := t.asPos(ptf.Args[0], ptf.Args[1]); ok {
+				call.Args[i] = pos
+			}
+		}
+		return true
+	})
 }
 func (t *translator) makeSwitches(d *ast.BlockStmt) {
 	if true {
@@ -1183,7 +1248,7 @@ func (t *translator) inferTypeOf(v ast.Expr) {
 		typ = t.types.Waypoint
 		pref = "wp"
 	default:
-		if rt.PkgPath() != reflect.TypeOf(ns.Self).PkgPath() {
+		if rt.PkgPath() != reflect.TypeOf((*ns.Obj)(nil)).Elem().PkgPath() {
 			log.Printf("unsupported hint for %q: %v", obj.Name, rt)
 			return
 		}
@@ -1294,8 +1359,14 @@ func (t *translator) fixBoolAndNil() {
 }
 func (t *translator) updateImports() {
 	var used struct {
+		time     int
+		strconv  int
+		script   int
+		object   int
+		types    int
 		ns       int
 		audio    int
+		spell    int
 		effects  int
 		enchant  int
 		class    int
@@ -1304,10 +1375,22 @@ func (t *translator) updateImports() {
 	}
 	ast.Inspect(t.f, func(n ast.Node) bool {
 		switch n {
+		case t.imports.time:
+			used.time++
+		case t.imports.strconv:
+			used.strconv++
+		case t.imports.script:
+			used.script++
+		case t.imports.object:
+			used.object++
+		case t.imports.types:
+			used.types++
 		case t.imports.ns:
 			used.ns++
 		case t.imports.audio:
 			used.audio++
+		case t.imports.spell:
+			used.spell++
 		case t.imports.effects:
 			used.effects++
 		case t.imports.enchant:
@@ -1322,11 +1405,29 @@ func (t *translator) updateImports() {
 		return true
 	})
 	var add []string
+	if used.time != 0 {
+		add = append(add, "time")
+	}
+	if used.strconv != 0 {
+		add = append(add, "strconv")
+	}
+	if used.script != 0 {
+		add = append(add, importPathFor((*script.Positioner)(nil)))
+	}
+	if used.object != 0 {
+		add = append(add, importPathFor(object.Class(0)))
+	}
+	if used.types != 0 {
+		add = append(add, importPathFor(types.Pointf{}))
+	}
 	if used.ns != 0 {
 		add = append(add, importPathFor((*ns.Handle)(nil)))
 	}
 	if used.audio != 0 {
 		add = append(add, importPathFor(audio.Name("")))
+	}
+	if used.spell != 0 {
+		add = append(add, importPathFor(spell.Spell("")))
 	}
 	if used.effects != 0 {
 		add = append(add, importPathFor(effect.Effect("")))
@@ -1380,6 +1481,7 @@ func replace(n ast.Node, from, to ast.Expr) int {
 			}
 			cnt += replace(a, from, to)
 		}
+		cnt += replace(n.Fun, from, to)
 	case *ast.UnaryExpr:
 		if n.X == from {
 			n.X = to
@@ -1397,6 +1499,39 @@ func replace(n ast.Node, from, to ast.Expr) int {
 		}
 		cnt += replace(n.X, from, to)
 		cnt += replace(n.Y, from, to)
+	case *ast.SelectorExpr:
+		if n.X == from {
+			n.X = to
+			cnt++
+		}
+		if n.Sel == from {
+			n.Sel = to.(*ast.Ident)
+			cnt++
+		}
+		cnt += replace(n.X, from, to)
+	case *ast.CompositeLit:
+		if n.Type == from {
+			n.Type = to
+			cnt++
+		}
+		for i, x := range n.Elts {
+			if x == from {
+				n.Elts[i] = to
+				cnt++
+			}
+			cnt += replace(n.Elts[i], from, to)
+		}
+	case *ast.KeyValueExpr:
+		if n.Key == from {
+			n.Key = to
+			cnt++
+		}
+		if n.Value == from {
+			n.Value = to
+			cnt++
+		}
+		cnt += replace(n.Key, from, to)
+		cnt += replace(n.Value, from, to)
 	}
 	return cnt
 }
@@ -1454,50 +1589,6 @@ func getType(x ast.Expr) any {
 	return nil
 }
 
-func intLit(v int) *ast.BasicLit {
-	return &ast.BasicLit{Kind: token.INT, Value: strconv.FormatInt(int64(v), 10)}
-}
-
-func asInt(x ast.Expr) (int, bool) {
-	switch x := x.(type) {
-	case *ast.BasicLit:
-		if x.Kind == token.INT {
-			v, err := strconv.Atoi(x.Value)
-			if err != nil {
-				return 0, false
-			}
-			return v, true
-		}
-	}
-	return 0, false
-}
-
-func asStr(x ast.Expr) (string, bool) {
-	switch x := x.(type) {
-	case *ast.BasicLit:
-		if x.Kind == token.STRING {
-			v, err := strconv.Unquote(x.Value)
-			if err != nil {
-				return "", false
-			}
-			return v, true
-		}
-	}
-	return "", false
-}
-
-func floatLit(v float32) *ast.BasicLit {
-	return &ast.BasicLit{Kind: token.FLOAT, Value: strconv.FormatFloat(float64(v), 'g', -1, 32)}
-}
-
-func stringLit(v string) *ast.BasicLit {
-	return &ast.BasicLit{Kind: token.STRING, Value: strconv.Quote(v)}
-}
-
-func takeAddr(x ast.Expr) ast.Expr {
-	return &ast.UnaryExpr{Op: token.AND, X: x}
-}
-
 func condition(x ast.Expr) ast.Expr {
 	typeHint(x, reflBool)
 	switch x := x.(type) {
@@ -1524,33 +1615,4 @@ func condition(x ast.Expr) ast.Expr {
 		}
 	}
 	return x
-}
-
-func not(x ast.Expr) ast.Expr {
-	switch x := x.(type) {
-	case *ast.UnaryExpr:
-		if x.Op == token.NOT {
-			return x.X
-		}
-	case *ast.BinaryExpr:
-		op := x.Op
-		switch op {
-		case token.EQL:
-			op = token.NEQ
-		case token.NEQ:
-			op = token.EQL
-		default:
-			op = 0
-		}
-		if op != 0 {
-			return &ast.BinaryExpr{X: x.X, Op: op, Y: x.Y}
-		}
-	}
-	return &ast.UnaryExpr{Op: token.NOT, X: x}
-}
-
-func printExpr(x ast.Expr) string {
-	var buf bytes.Buffer
-	format.Node(&buf, token.NewFileSet(), x)
-	return buf.String()
 }
