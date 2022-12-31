@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"net/http"
 	"os"
+	lpath "path"
 	"path/filepath"
 	"strings"
 
@@ -143,15 +144,19 @@ func (s *Server) handleMap(w http.ResponseWriter, r *http.Request, p httprouter.
 }
 
 func (s *Server) handleMapDownload(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	name := p.ByName("map")
+	name := strings.ToLower(p.ByName("map"))
 	if name == "" {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 	base := filepath.Join(s.path, name)
+	base = ifs.Normalize(base)
+
 	fname := name + ".map"
 	fpath := filepath.Join(base, fname)
-	fi, err := ifs.Stat(fpath)
+	fpath = ifs.Normalize(fpath)
+
+	fi, err := os.Stat(fpath)
 	if os.IsNotExist(err) || fi.IsDir() || fi.Size() == 0 {
 		w.WriteHeader(http.StatusNotFound)
 		return
@@ -163,7 +168,7 @@ func (s *Server) handleMapDownload(w http.ResponseWriter, r *http.Request, p htt
 	accept := r.Header.Get("Accept")
 	if accept == "" {
 		// serve the map file itself
-		f, err := ifs.Open(fpath)
+		f, err := os.Open(fpath)
 		if err != nil {
 			Log.Printf("error serving map %q: %v", name, err)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -177,7 +182,7 @@ func (s *Server) handleMapDownload(w http.ResponseWriter, r *http.Request, p htt
 	w.Header().Set("Content-Type", contentTypeZIP)
 	zw := zip.NewWriter(w)
 	defer zw.Close()
-	err = ifs.WalkDir(base, func(path string, d ifs.DirEntry, err error) error {
+	err = filepath.WalkDir(base, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -198,11 +203,12 @@ func (s *Server) handleMapDownload(w http.ResponseWriter, r *http.Request, p htt
 			return err
 		}
 		name = strings.ToLower(name)
+		name = lpath.Clean(name)
 		f, err := zw.Create(name)
 		if err != nil {
 			return err
 		}
-		r, err := ifs.Open(path)
+		r, err := os.Open(path)
 		if err != nil {
 			return err
 		}

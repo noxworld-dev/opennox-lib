@@ -99,12 +99,12 @@ func (c *Client) DownloadMap(ctx context.Context, dest string, name string) erro
 	Log.Println("GET", url)
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
-		return err
+		return fmt.Errorf("cannot create request: %w", err)
 	}
 	req.Header.Set("Accept", contentTypeZIP+", */*;q=0.8")
 	resp, err := c.cli.Do(req)
 	if err != nil {
-		return err
+		return fmt.Errorf("request failed: %w", err)
 	}
 	defer resp.Body.Close()
 
@@ -119,7 +119,7 @@ func (c *Client) DownloadMap(ctx context.Context, dest string, name string) erro
 	}
 	dest = filepath.Join(dest, name)
 	if err := ifs.Mkdir(dest); err != nil {
-		return err
+		return fmt.Errorf("cannot create dest dir: %w", err)
 	}
 	r := limitReader(resp.Body, mapFileSizeLimit)
 	switch resp.Header.Get("Content-Type") {
@@ -127,15 +127,15 @@ func (c *Client) DownloadMap(ctx context.Context, dest string, name string) erro
 		// maps compressed with ZIP
 		tmp, err := os.CreateTemp("", "nox_map_*.zip")
 		if err != nil {
-			return err
+			return fmt.Errorf("cannot create dest zip archive: %w", err)
 		}
 		defer func() {
 			_ = tmp.Close()
-			_ = os.Remove(tmp.Name())
+			//_ = os.Remove(tmp.Name())
 		}()
 		sz, err := io.Copy(tmp, r)
 		if err != nil {
-			return err
+			return fmt.Errorf("cannot copy zip archive: %w", err)
 		}
 		_, err = tmp.Seek(0, io.SeekStart)
 		if err != nil {
@@ -144,7 +144,7 @@ func (c *Client) DownloadMap(ctx context.Context, dest string, name string) erro
 		Log.Println("unpacking map zip archive:", tmp.Name())
 		zf, err := zip.NewReader(tmp, sz)
 		if err != nil {
-			return err
+			return fmt.Errorf("zip read failed: %w", err)
 		}
 		for _, f := range zf.File {
 			path := strings.ToLower(f.Name)
@@ -154,7 +154,7 @@ func (c *Client) DownloadMap(ctx context.Context, dest string, name string) erro
 			}
 			path = filepath.Join(dest, path)
 			if err := ifs.Mkdir(filepath.Dir(path)); err != nil {
-				return err
+				return fmt.Errorf("cannot create dir for map file %q: %w", path, err)
 			}
 			err := func() error {
 				w, err := ifs.Create(path)
@@ -176,7 +176,7 @@ func (c *Client) DownloadMap(ctx context.Context, dest string, name string) erro
 				return w.Close()
 			}()
 			if err != nil {
-				return err
+				return fmt.Errorf("cannot write map file %q: %w", path, err)
 			}
 		}
 		return nil
@@ -184,12 +184,12 @@ func (c *Client) DownloadMap(ctx context.Context, dest string, name string) erro
 		// regular map files served directly
 		f, err := ifs.Create(filepath.Join(dest, name+Ext))
 		if err != nil {
-			return err
+			return fmt.Errorf("cannot create dest map file: %w", err)
 		}
 		defer f.Close()
 		_, err = io.Copy(f, r)
 		if err != nil {
-			return err
+			return fmt.Errorf("cannot write dest map file: %w", err)
 		}
 		return f.Close()
 	}
