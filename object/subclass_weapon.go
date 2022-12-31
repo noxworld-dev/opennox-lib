@@ -51,33 +51,33 @@ var _ enum[WeaponClass] = WeaponClass(0)
 type WeaponClass uint32
 
 const (
-	WeaponFlag = WeaponClass(1 << iota)
-	WeaponQuiver
-	WeaponBow
-	WeaponCrossbow
-	WeaponArrow
-	WeaponBolt
-	WeaponChakram
-	WeaponShuriken
-	WeaponSword
-	WeaponLongSword
-	WeaponGreatSword
-	WeaponMace
-	WeaponAxe
-	WeaponOgreAxe
-	WeaponHammer
-	WeaponStaff
-	WeaponStaffSulphorousFlare
-	WeaponStaffSulphorousShower
-	WeaponStaffLightning
-	WeaponStaffFireball
-	WeaponStaffTripleFireball
-	WeaponStaffForceOfNature
-	WeaponStaffDeathRay
-	WeaponStaffOblivionHalberd
-	WeaponStaffOblivionHeart
-	WeaponStaffOblivionWierdling
-	WeaponStaffOblivionOrb
+	WeaponFlag                   = WeaponClass(1 << iota) // 0x1
+	WeaponQuiver                                          // 0x2
+	WeaponBow                                             // 0x4
+	WeaponCrossbow                                        // 0x8
+	WeaponArrow                                           // 0x10
+	WeaponBolt                                            // 0x20
+	WeaponChakram                                         // 0x40
+	WeaponShuriken                                        // 0x80
+	WeaponSword                                           // 0x100
+	WeaponLongSword                                       // 0x200
+	WeaponGreatSword                                      // 0x400
+	WeaponMace                                            // 0x800
+	WeaponAxe                                             // 0x1000
+	WeaponOgreAxe                                         // 0x2000
+	WeaponHammer                                          // 0x4000
+	WeaponStaff                                           // 0x8000
+	WeaponStaffSulphorousFlare                            // 0x10000
+	WeaponStaffSulphorousShower                           // 0x20000
+	WeaponStaffLightning                                  // 0x40000
+	WeaponStaffFireball                                   // 0x80000
+	WeaponStaffTripleFireball                             // 0x100000
+	WeaponStaffForceOfNature                              // 0x200000
+	WeaponStaffDeathRay                                   // 0x400000
+	WeaponStaffOblivionHalberd                            // 0x800000
+	WeaponStaffOblivionHeart                              // 0x1000000
+	WeaponStaffOblivionWierdling                          // 0x2000000
+	WeaponStaffOblivionOrb                                // 0x4000000
 )
 
 func (c WeaponClass) Has(c2 WeaponClass) bool {
