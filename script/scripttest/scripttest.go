@@ -11,8 +11,17 @@ import (
 )
 
 type Object struct {
+	SID    int
 	IDVal  string
 	PosVal types.Pointf
+}
+
+func (v *Object) ScriptID() int {
+	return v.SID
+}
+
+func (v *Object) ObjScriptID() int {
+	return v.SID
 }
 
 func (v *Object) String() string {

@@ -20,6 +20,10 @@ type ObjectWrapper interface {
 }
 
 type Object interface {
+	// ScriptID returns internal script ID for the object.
+	ScriptID() int
+	// ObjScriptID returns internal script ID for the object.
+	ObjScriptID() int
 	Identifiable
 	ObjectWrapper
 	Class() object.Class
@@ -164,6 +168,14 @@ var _ Object = BaseObject{}
 // BaseObject implements Object, but panics on all the methods.
 // Useful when you only want to define a part of the implementation.
 type BaseObject struct{}
+
+func (BaseObject) ScriptID() int {
+	panic("implement me")
+}
+
+func (BaseObject) ObjScriptID() int {
+	panic("implement me")
+}
 
 func (BaseObject) ID() string {
 	panic("implement me")
