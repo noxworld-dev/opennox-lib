@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/noxworld-dev/opennox-lib/script/noxscript/scripttest"
+	"github.com/noxworld-dev/opennox-lib/script/scripttest"
 )
 
 func TestScriptDir(t *testing.T) {

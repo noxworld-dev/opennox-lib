@@ -3,7 +3,7 @@ package lua
 import (
 	"testing"
 
-	"github.com/noxworld-dev/opennox-lib/script/noxscript/scripttest"
+	"github.com/noxworld-dev/opennox-lib/script/scripttest"
 )
 
 func TestLUA(t *testing.T) {
