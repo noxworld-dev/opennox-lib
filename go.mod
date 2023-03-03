@@ -7,8 +7,11 @@ require (
 	github.com/icza/bitio v1.1.0
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/noxworld-dev/noxcrypt v0.0.0-20220809211245-2c69b67c4ae9
+	github.com/noxworld-dev/noxscript/ns v1.0.0
+	github.com/noxworld-dev/noxscript/ns/v3 v3.1.1
+	github.com/noxworld-dev/noxscript/ns/v4 v4.1.1
 	github.com/spf13/cobra v1.5.0
-	github.com/stretchr/testify v1.8.0
+	github.com/stretchr/testify v1.8.2
 	github.com/traefik/yaegi v0.15.0
 	github.com/veandco/go-sdl2 v0.4.25
 	github.com/yuin/gopher-lua v0.0.0-20220504180219-658193537a64

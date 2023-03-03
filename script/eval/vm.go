@@ -8,10 +8,13 @@ import (
 
 	"github.com/traefik/yaegi/interp"
 
+	nseval3 "github.com/noxworld-dev/noxscript/ns/v3/eval"
+	ns4 "github.com/noxworld-dev/noxscript/ns/v4"
+	nseval4 "github.com/noxworld-dev/noxscript/ns/v4/eval"
+
 	"github.com/noxworld-dev/opennox-lib/log"
 	"github.com/noxworld-dev/opennox-lib/script"
 	"github.com/noxworld-dev/opennox-lib/script/eval/imports"
-	"github.com/noxworld-dev/opennox-lib/script/noxscript/ns"
 )
 
 var (
@@ -83,8 +86,8 @@ func NewVM(g script.Game, dir string) *VM {
 	vm.addPrinters(stdout, stderr)
 	vm.initPackages()
 	// TODO: actually override all exported methods of VM to point to this game pointer
-	if nsg, ok := g.(ns.Game); ok {
-		ns.SetRuntime(nsg.NoxScript())
+	if nsg, ok := g.(ns4.Game); ok {
+		ns4.SetRuntime(nsg.NoxScript())
 	}
 	return vm
 }
@@ -116,6 +119,8 @@ func importPathFor(v any) string {
 
 func (vm *VM) initPackages() {
 	vm.vm.Use(imports.Symbols)
+	vm.vm.Use(nseval3.Symbols)
+	vm.vm.Use(nseval4.Symbols)
 
 	// Rename map entry below when refactoring!
 	// These strange assignments below statically check that types of the function and override are exactly the same.
@@ -141,9 +146,13 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/noxworld-dev/opennox-lib/types"
 	"github.com/noxworld-dev/opennox-lib/object"
 	"github.com/noxworld-dev/opennox-lib/script"
+
+	ns3 "github.com/noxworld-dev/noxscript/ns/v3"
+	ns4 "github.com/noxworld-dev/noxscript/ns/v4"
 )
 
 var Game = script.Runtime()

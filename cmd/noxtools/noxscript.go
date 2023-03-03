@@ -14,10 +14,10 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/noxworld-dev/noxscript/ns/asm"
+	"github.com/noxworld-dev/noxscript/ns/v3/noxast"
+
 	"github.com/noxworld-dev/opennox-lib/maps"
-	"github.com/noxworld-dev/opennox-lib/script/noxscript"
-	asm "github.com/noxworld-dev/opennox-lib/script/noxscript/noxasm"
-	"github.com/noxworld-dev/opennox-lib/script/noxscript/noxast"
 )
 
 func init() {
@@ -165,7 +165,7 @@ func cmdNSDisasm(cmd *cobra.Command, args []string) error {
 	}
 	_ = f.Close()
 
-	scr, err := noxscript.ReadScript(bytes.NewReader(raw))
+	scr, err := asm.ReadScript(bytes.NewReader(raw))
 	if err != nil {
 		return err
 	}
@@ -222,7 +222,7 @@ func cmdNSDecomp(cmd *cobra.Command, args []string) error {
 	}
 	_ = f.Close()
 
-	scr, err := noxscript.ReadScript(bytes.NewReader(raw))
+	scr, err := asm.ReadScript(bytes.NewReader(raw))
 	if err != nil {
 		return err
 	}

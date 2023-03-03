@@ -9,10 +9,11 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/noxworld-dev/noxscript/ns/asm"
+
 	"github.com/noxworld-dev/opennox-lib/ifs"
 	"github.com/noxworld-dev/opennox-lib/maps"
 	"github.com/noxworld-dev/opennox-lib/noxtest"
-	"github.com/noxworld-dev/opennox-lib/script/noxscript"
 )
 
 var casesMapInfo = []maps.Info{
@@ -150,7 +151,7 @@ func TestReadFile(t *testing.T) {
 				if len(mp.Script.Data) == 0 {
 					t.Logf("script [%d]", len(mp.Script.Data))
 				} else {
-					sc, err := noxscript.ReadScript(bytes.NewReader(mp.Script.Data))
+					sc, err := asm.ReadScript(bytes.NewReader(mp.Script.Data))
 					require.NoError(t, err)
 					t.Logf("script [%d]: %d funcs, %d strings", len(mp.Script.Data), len(sc.Funcs), len(sc.Strings))
 				}
