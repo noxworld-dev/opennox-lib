@@ -41,8 +41,8 @@ const (
 
 // CreateObject creates an object given a type and a starting location.
 //
-//  Example:
-//    spider := CreateObject("SmallAlbinoSpider", Waypoint("SpiderHole"))
+//	Example:
+//	  spider := CreateObject("SmallAlbinoSpider", Waypoint("SpiderHole"))
 func CreateObject(typ string, pos script.Positioner) Obj {
 	if impl == nil {
 		return nil

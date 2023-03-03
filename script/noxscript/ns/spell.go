@@ -17,9 +17,9 @@ func Effect(effect effect.Effect, p1, p2 script.Positioner) {
 
 // CastSpell casts a spell from source to target.
 //
-//  Example:
-//    CastSpellObjectObject(spell.DEATH_RAY, Object("CruelDude"), GetHost())
-//    CastSpellObjectObject(spell.DEATH_RAY, types.Ptf(10, 5), Waypoint("Target"))
+//	Example:
+//	  CastSpell(spell.DEATH_RAY, Object("CruelDude"), GetHost())
+//	  CastSpell(spell.DEATH_RAY, types.Ptf(10, 5), Waypoint("Target"))
 func CastSpell(spell spell.Spell, source, target script.Positioner) {
 	if impl == nil {
 		return
