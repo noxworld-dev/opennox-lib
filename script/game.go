@@ -1,6 +1,7 @@
 package script
 
 import (
+	"context"
 	"image"
 	"time"
 
@@ -12,6 +13,18 @@ var global Game = BaseGame{}
 // Runtime returns a global runtime instance.
 func Runtime() Game {
 	return global
+}
+
+type gameKey struct{}
+
+// WithGame stores Game reference in the context.
+func WithGame(ctx context.Context, g Game) context.Context {
+	return context.WithValue(ctx, gameKey{}, g)
+}
+
+// GetGame loads Game from the context.
+func GetGame(ctx context.Context) Game {
+	return ctx.Value(gameKey{}).(Game)
 }
 
 type Game interface {
