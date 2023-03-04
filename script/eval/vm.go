@@ -2,12 +2,14 @@ package eval
 
 import (
 	"bytes"
+	"context"
 	"os"
 	"reflect"
 	"strings"
 
 	"github.com/traefik/yaegi/interp"
 
+	eudeval "github.com/noxworld-dev/noxscript/eud/v171/eval"
 	nseval3 "github.com/noxworld-dev/noxscript/ns/v3/eval"
 	ns4 "github.com/noxworld-dev/noxscript/ns/v4"
 	nseval4 "github.com/noxworld-dev/noxscript/ns/v4/eval"
@@ -20,6 +22,18 @@ import (
 var (
 	Log = log.New("eval")
 )
+
+var useSymbols []Exports
+
+type Exports struct {
+	Symbols interp.Exports
+	Context func(ctx context.Context, g script.Game) context.Context
+}
+
+// Register additional libraries for the interpreter.
+func Register(m Exports) {
+	useSymbols = append(useSymbols, m)
+}
 
 func init() {
 	script.RegisterVM(script.VMRuntime{
@@ -59,7 +73,6 @@ func (p *printer) Write(data []byte) (int, error) {
 var _ script.VM = (*VM)(nil)
 
 type VM struct {
-	g        script.Game
 	vm       *interp.Interpreter
 	printers []*printer
 	defs     bool
@@ -74,7 +87,7 @@ type VM struct {
 func NewVM(g script.Game, dir string) *VM {
 	stdout := &printer{p: g.Console(false)}
 	stderr := &printer{p: g.Console(true)}
-	vm := &VM{g: g, vm: interp.New(interp.Options{
+	vm := &VM{vm: interp.New(interp.Options{
 		GoPath:               "/",
 		BuildTags:            []string{"script"},
 		Stdin:                bytes.NewReader(nil),
@@ -84,11 +97,7 @@ func NewVM(g script.Game, dir string) *VM {
 		SourcecodeFilesystem: &modFS{root: dir},
 	})}
 	vm.addPrinters(stdout, stderr)
-	vm.initPackages()
-	// TODO: actually override all exported methods of VM to point to this game pointer
-	if nsg, ok := g.(ns4.Game); ok {
-		ns4.SetRuntime(nsg.NoxScript())
-	}
+	vm.initPackages(g)
 	return vm
 }
 
@@ -117,27 +126,49 @@ func importPathFor(v any) string {
 	return t.PkgPath()
 }
 
-func (vm *VM) initPackages() {
+func (vm *VM) initPackages(g script.Game) {
+	ctx := context.Background()
+
 	vm.vm.Use(imports.Symbols)
 	vm.vm.Use(nseval3.Symbols)
 	vm.vm.Use(nseval4.Symbols)
+	vm.vm.Use(eudeval.Symbols)
+	ctx = script.WithGame(ctx, g)
+
+	for _, m := range useSymbols {
+		if m.Symbols != nil {
+			vm.vm.Use(m.Symbols)
+		}
+		if m.Context != nil {
+			ctx = m.Context(ctx, g)
+		}
+	}
 
 	// Rename map entry below when refactoring!
 	// These strange assignments below statically check that types of the function and override are exactly the same.
 	getGame := script.Runtime
-	getGame = vm.runtime
+	getGame = func() script.Game {
+		return g
+	}
 	vm.vm.Use(interp.Exports{
 		importPathFor((*script.Game)(nil)) + "/script": {
 			"Runtime": reflect.ValueOf(getGame),
 		},
 	})
-}
-
-func (vm *VM) runtime() script.Game {
-	if vm.g == nil {
-		return script.Runtime()
+	getCtx := context.Background
+	getCtx = func() context.Context {
+		return ctx
 	}
-	return vm.g
+	vm.vm.Use(interp.Exports{
+		importPathFor((*context.Context)(nil)) + "/context": {
+			"Background": reflect.ValueOf(getCtx),
+		},
+	})
+	// TODO: properly virtualize
+	script.SetRuntime(g)
+	if v, ok := g.(ns4.Game); ok {
+		ns4.SetRuntime(v.NoxScript())
+	}
 }
 
 func (vm *VM) initMain() {
@@ -153,6 +184,7 @@ import (
 
 	ns3 "github.com/noxworld-dev/noxscript/ns/v3"
 	ns4 "github.com/noxworld-dev/noxscript/ns/v4"
+	eud "github.com/noxworld-dev/noxscript/eud/v171"
 )
 
 var Game = script.Runtime()

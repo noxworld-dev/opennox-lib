@@ -23,6 +23,7 @@ func init() {
 		"EventMapShutdown":   reflect.ValueOf(script.EventMapShutdown),
 		"EventPlayerDeath":   reflect.ValueOf(script.EventPlayerDeath),
 		"Frames":             reflect.ValueOf(script.Frames),
+		"GetGame":            reflect.ValueOf(script.GetGame),
 		"HasItem":            reflect.ValueOf(script.HasItem),
 		"HitMeleePos":        reflect.ValueOf(script.HitMeleePos),
 		"HitRangedPos":       reflect.ValueOf(script.HitRangedPos),
@@ -44,6 +45,7 @@ func init() {
 		"ToggleLock":         reflect.ValueOf(script.ToggleLock),
 		"VMRuntimes":         reflect.ValueOf(script.VMRuntimes),
 		"WalkToPos":          reflect.ValueOf(script.WalkToPos),
+		"WithGame":           reflect.ValueOf(script.WithGame),
 
 		// type definitions
 		"BaseGame":       reflect.ValueOf((*script.BaseGame)(nil)),
@@ -476,6 +478,7 @@ type _github_com_noxworld_dev_opennox_lib_script_LockableObject struct {
 	WIsEnabled           func() bool
 	WIsLocked            func() bool
 	WLock                func(lock bool)
+	WObjScriptID         func() int
 	WObjectType          func() script.ObjectType
 	WOnTriggerActivate   func(fnc func(obj script.Object))
 	WOnTriggerDeactivate func(fnc func())
@@ -483,6 +486,7 @@ type _github_com_noxworld_dev_opennox_lib_script_LockableObject struct {
 	WPos                 func() types.Pointf
 	WPush                func(vec types.Pointf, force float32)
 	WPushTo              func(p types.Pointf)
+	WScriptID            func() int
 	WSetOwner            func(owner script.ObjectWrapper)
 	WSetPos              func(p types.Pointf)
 	WSetZ                func(z float32)
@@ -517,6 +521,9 @@ func (W _github_com_noxworld_dev_opennox_lib_script_LockableObject) IsLocked() b
 func (W _github_com_noxworld_dev_opennox_lib_script_LockableObject) Lock(lock bool) {
 	W.WLock(lock)
 }
+func (W _github_com_noxworld_dev_opennox_lib_script_LockableObject) ObjScriptID() int {
+	return W.WObjScriptID()
+}
 func (W _github_com_noxworld_dev_opennox_lib_script_LockableObject) ObjectType() script.ObjectType {
 	return W.WObjectType()
 }
@@ -537,6 +544,9 @@ func (W _github_com_noxworld_dev_opennox_lib_script_LockableObject) Push(vec typ
 }
 func (W _github_com_noxworld_dev_opennox_lib_script_LockableObject) PushTo(p types.Pointf) {
 	W.WPushTo(p)
+}
+func (W _github_com_noxworld_dev_opennox_lib_script_LockableObject) ScriptID() int {
+	return W.WScriptID()
 }
 func (W _github_com_noxworld_dev_opennox_lib_script_LockableObject) SetOwner(owner script.ObjectWrapper) {
 	W.WSetOwner(owner)
@@ -634,6 +644,7 @@ type _github_com_noxworld_dev_opennox_lib_script_Object struct {
 	WGetObject           func() script.Object
 	WID                  func() string
 	WIsEnabled           func() bool
+	WObjScriptID         func() int
 	WObjectType          func() script.ObjectType
 	WOnTriggerActivate   func(fnc func(obj script.Object))
 	WOnTriggerDeactivate func(fnc func())
@@ -641,6 +652,7 @@ type _github_com_noxworld_dev_opennox_lib_script_Object struct {
 	WPos                 func() types.Pointf
 	WPush                func(vec types.Pointf, force float32)
 	WPushTo              func(p types.Pointf)
+	WScriptID            func() int
 	WSetOwner            func(owner script.ObjectWrapper)
 	WSetPos              func(p types.Pointf)
 	WSetZ                func(z float32)
@@ -669,6 +681,9 @@ func (W _github_com_noxworld_dev_opennox_lib_script_Object) ID() string {
 func (W _github_com_noxworld_dev_opennox_lib_script_Object) IsEnabled() bool {
 	return W.WIsEnabled()
 }
+func (W _github_com_noxworld_dev_opennox_lib_script_Object) ObjScriptID() int {
+	return W.WObjScriptID()
+}
 func (W _github_com_noxworld_dev_opennox_lib_script_Object) ObjectType() script.ObjectType {
 	return W.WObjectType()
 }
@@ -689,6 +704,9 @@ func (W _github_com_noxworld_dev_opennox_lib_script_Object) Push(vec types.Point
 }
 func (W _github_com_noxworld_dev_opennox_lib_script_Object) PushTo(p types.Pointf) {
 	W.WPushTo(p)
+}
+func (W _github_com_noxworld_dev_opennox_lib_script_Object) ScriptID() int {
+	return W.WScriptID()
 }
 func (W _github_com_noxworld_dev_opennox_lib_script_Object) SetOwner(owner script.ObjectWrapper) {
 	W.WSetOwner(owner)
@@ -1096,6 +1114,7 @@ type _github_com_noxworld_dev_opennox_lib_script_Unit struct {
 	WMana                func() (cur int, max int)
 	WMoveTo              func(p types.Pointf)
 	WMute                func()
+	WObjScriptID         func() int
 	WObjectType          func() script.ObjectType
 	WOnTriggerActivate   func(fnc func(obj script.Object))
 	WOnTriggerDeactivate func(fnc func())
@@ -1113,6 +1132,7 @@ type _github_com_noxworld_dev_opennox_lib_script_Unit struct {
 	WRetreatLevel        func() float32
 	WReturn              func()
 	WSay                 func(text string, dur script.Duration)
+	WScriptID            func() int
 	WSetAggression       func(v float32)
 	WSetHealth           func(v int)
 	WSetMana             func(v int)
@@ -1207,6 +1227,9 @@ func (W _github_com_noxworld_dev_opennox_lib_script_Unit) MoveTo(p types.Pointf)
 func (W _github_com_noxworld_dev_opennox_lib_script_Unit) Mute() {
 	W.WMute()
 }
+func (W _github_com_noxworld_dev_opennox_lib_script_Unit) ObjScriptID() int {
+	return W.WObjScriptID()
+}
 func (W _github_com_noxworld_dev_opennox_lib_script_Unit) ObjectType() script.ObjectType {
 	return W.WObjectType()
 }
@@ -1257,6 +1280,9 @@ func (W _github_com_noxworld_dev_opennox_lib_script_Unit) Return() {
 }
 func (W _github_com_noxworld_dev_opennox_lib_script_Unit) Say(text string, dur script.Duration) {
 	W.WSay(text, dur)
+}
+func (W _github_com_noxworld_dev_opennox_lib_script_Unit) ScriptID() int {
+	return W.WScriptID()
 }
 func (W _github_com_noxworld_dev_opennox_lib_script_Unit) SetAggression(v float32) {
 	W.WSetAggression(v)
