@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 
 	lua "github.com/yuin/gopher-lua"
@@ -79,13 +80,15 @@ func (vm *VM) InitAPI(global string, fnc APIFunc) *lua.LTable {
 }
 
 func (vm *VM) initDefault() {
-	if err := vm.Exec(`Nox = require("Nox.Map.Script.v0")`); err != nil {
+	if _, err := vm.Exec(`Nox = require("Nox.Map.Script.v0")`); err != nil {
 		panic(err)
 	}
 }
 
-func (vm *VM) Exec(s string) error {
-	return vm.s.DoString(s)
+func (vm *VM) Exec(s string) (reflect.Value, error) {
+	err := vm.s.DoString(s)
+	// TODO: implement return of the last value
+	return reflect.Value{}, err
 }
 
 func (vm *VM) ExecFile(path string) error {
@@ -143,6 +146,10 @@ func (vm *VM) OnFrame() {
 			return s.PCall(0, 0, nil)
 		})
 	}
+}
+
+func (vm *VM) GetSymbol(name string, typ reflect.Type) (reflect.Value, bool, error) {
+	return reflect.Value{}, false, nil // TODO: implement
 }
 
 func (vm *VM) Close() error {

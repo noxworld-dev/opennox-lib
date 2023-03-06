@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/noxworld-dev/opennox-lib/script"
 	"github.com/noxworld-dev/opennox-lib/script/scripttest"
 )
 
@@ -64,11 +65,11 @@ func Three() { println("three") }
 	require.True(t, ok)
 	fnc()
 
-	err = vm.Exec(`println("builtin")`)
+	_, err = vm.Exec(`println("builtin")`)
 	require.NoError(t, err)
-	err = vm.Exec(`fmt.Println("fmt")`)
+	_, err = vm.Exec(`fmt.Println("fmt")`)
 	require.NoError(t, err)
-	err = vm.Exec(`Game.Global().Print("global")`)
+	_, err = vm.Exec(`Game.Global().Print("global")`)
 	require.NoError(t, err)
 	vm.OnFrame()
 
@@ -77,4 +78,12 @@ func Three() { println("three") }
 	p, ok := rv.Interface().(int)
 	require.True(t, ok)
 	require.Equal(t, int(3), p)
+
+	one, err := script.GetVMSymbol[func()](vm, "One")
+	require.NoError(t, err)
+	one()
+
+	cnt, err := script.GetVMSymbolPtr[int](vm, "Cnt")
+	require.NoError(t, err)
+	require.Equal(t, int(4), *cnt)
 }

@@ -52,6 +52,6 @@ func (g *testGame) Time() time.Duration {
 }
 
 func (g *testGame) Exec(s string) {
-	err := g.vm.Exec(s)
+	_, err := g.vm.Exec(s)
 	require.NoError(g.t, err)
 }

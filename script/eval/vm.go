@@ -3,6 +3,7 @@ package eval
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"os"
 	"reflect"
 	"strings"
@@ -42,10 +43,12 @@ func init() {
 			vm := NewVM(g, maps)
 			err := vm.ExecFile(name)
 			if os.IsNotExist(err) {
+				Log.Println("no go files")
 				return vm, nil // still run the empty script for commands
 			} else if err != nil {
 				return nil, err
 			}
+			Log.Println("go scripts loaded")
 			return vm, nil
 		},
 	})
@@ -216,15 +219,14 @@ func (vm *VM) checkExports() {
 	}
 }
 
-func (vm *VM) Exec(s string) error {
+func (vm *VM) Exec(s string) (reflect.Value, error) {
 	if !vm.defs {
 		vm.initMain()
 		vm.defs = true
 	}
 	defer vm.checkExports()
 	defer vm.flushPrinters()
-	_, err := vm.vm.Eval(s)
-	return err
+	return vm.vm.Eval(s)
 }
 
 func (vm *VM) ExecFile(pkg string) error {
@@ -238,6 +240,9 @@ func (vm *VM) ExecFile(pkg string) error {
 		return err
 	}
 	vm.curExports = vm.vm.Symbols(pkg)[pkg]
+	if len(vm.curExports) == 0 {
+		Log.Println("no exports from go; wrong package name?")
+	}
 	return nil
 }
 
@@ -259,6 +264,16 @@ func (vm *VM) OnEvent(typ script.EventType) {
 	} else if vm.onEventStr != nil {
 		vm.onEventStr(string(typ))
 	}
+}
+
+func (vm *VM) GetSymbol(name string, typ reflect.Type) (reflect.Value, bool, error) {
+	rv, ok := vm.exportByName(name)
+	if !ok {
+		return reflect.Value{}, false, nil
+	} else if rv.Type() != typ {
+		return reflect.Value{}, false, fmt.Errorf("unexpected type of %q: expected %v, got %v", name, typ, rv.Type())
+	}
+	return rv, true, nil
 }
 
 func (vm *VM) Close() error {
