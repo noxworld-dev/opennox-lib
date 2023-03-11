@@ -3,13 +3,8 @@ package eval
 import (
 	"io/fs"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
-)
-
-const (
-	rootPref = "/src/"
 )
 
 func allowedFile(mode fs.FileMode) bool {
@@ -99,27 +94,27 @@ func (f modFile) ReadDir(n int) ([]fs.DirEntry, error) {
 }
 
 func (m *modFS) virtPath(p string) string {
-	if !path.IsAbs(p) {
-		p = path.Clean(p)
+	if !filepath.IsAbs(p) {
+		p = filepath.Clean(p)
 		return p
 	}
 	if !strings.HasPrefix(p, m.root) {
-		return path.Base(p)
+		return filepath.Base(p)
 	}
 	p = p[len(m.root):]
-	p = path.Clean(p)
-	p = path.Join(rootPref, p)
+	p = filepath.Clean(p)
+	p = filepath.Join(rootPref, p)
 	return p
 }
 
 func (m *modFS) realPath(p string) (string, bool) {
-	if path.IsAbs(p) {
+	if filepath.IsAbs(p) {
 		if !strings.HasPrefix(p, rootPref) {
 			return "", false
 		}
 		p = p[len(rootPref):]
 	}
-	p = path.Clean(p)
+	p = filepath.Clean(p)
 	p = filepath.Join(m.root, p)
 	return p, true
 }

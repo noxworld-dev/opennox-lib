@@ -91,7 +91,7 @@ func NewVM(g script.Game, dir string) *VM {
 	stdout := &printer{p: g.Console(false)}
 	stderr := &printer{p: g.Console(true)}
 	vm := &VM{vm: interp.New(interp.Options{
-		GoPath:               "/",
+		GoPath:               gopath,
 		BuildTags:            []string{"script"},
 		Stdin:                bytes.NewReader(nil),
 		Stdout:               stdout,
