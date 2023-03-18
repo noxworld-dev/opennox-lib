@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/noxworld-dev/noxscript/ns/v4"
 	"github.com/noxworld-dev/opennox-lib/object"
 	"github.com/noxworld-dev/opennox-lib/script"
 	"github.com/noxworld-dev/opennox-lib/spell"
@@ -175,13 +176,13 @@ func (W _github_com_noxworld_dev_opennox_lib_script_Breakable) SetMaxHealth(v in
 type _github_com_noxworld_dev_opennox_lib_script_Chatty struct {
 	IValue interface{}
 	WMute  func()
-	WSay   func(text string, dur script.Duration)
+	WSay   func(text string, dur ns.Duration)
 }
 
 func (W _github_com_noxworld_dev_opennox_lib_script_Chatty) Mute() {
 	W.WMute()
 }
-func (W _github_com_noxworld_dev_opennox_lib_script_Chatty) Say(text string, dur script.Duration) {
+func (W _github_com_noxworld_dev_opennox_lib_script_Chatty) Say(text string, dur ns.Duration) {
 	W.WSay(text, dur)
 }
 
@@ -570,7 +571,7 @@ func (W _github_com_noxworld_dev_opennox_lib_script_LockableObject) Z() float32 
 // _github_com_noxworld_dev_opennox_lib_script_Mobile is an interface wrapper for Mobile type
 type _github_com_noxworld_dev_opennox_lib_script_Mobile struct {
 	IValue     interface{}
-	WFlee      func(obj script.Positioner, dur script.Duration)
+	WFlee      func(obj script.Positioner, dur ns.Duration)
 	WFollow    func(obj script.Positioner)
 	WFreeze    func(freeze bool)
 	WIdle      func()
@@ -583,7 +584,7 @@ type _github_com_noxworld_dev_opennox_lib_script_Mobile struct {
 	WWander    func()
 }
 
-func (W _github_com_noxworld_dev_opennox_lib_script_Mobile) Flee(obj script.Positioner, dur script.Duration) {
+func (W _github_com_noxworld_dev_opennox_lib_script_Mobile) Flee(obj script.Positioner, dur ns.Duration) {
 	W.WFlee(obj, dur)
 }
 func (W _github_com_noxworld_dev_opennox_lib_script_Mobile) Follow(obj script.Positioner) {
@@ -1096,7 +1097,7 @@ type _github_com_noxworld_dev_opennox_lib_script_Unit struct {
 	WDelete              func()
 	WDestroy             func()
 	WEnable              func(enable bool)
-	WFlee                func(obj script.Positioner, dur script.Duration)
+	WFlee                func(obj script.Positioner, dur ns.Duration)
 	WFollow              func(obj script.Positioner)
 	WFreeze              func(freeze bool)
 	WGetObject           func() script.Object
@@ -1131,7 +1132,7 @@ type _github_com_noxworld_dev_opennox_lib_script_Unit struct {
 	WRegroupLevel        func() float32
 	WRetreatLevel        func() float32
 	WReturn              func()
-	WSay                 func(text string, dur script.Duration)
+	WSay                 func(text string, dur ns.Duration)
 	WScriptID            func() int
 	WSetAggression       func(v float32)
 	WSetHealth           func(v int)
@@ -1173,7 +1174,7 @@ func (W _github_com_noxworld_dev_opennox_lib_script_Unit) Destroy() {
 func (W _github_com_noxworld_dev_opennox_lib_script_Unit) Enable(enable bool) {
 	W.WEnable(enable)
 }
-func (W _github_com_noxworld_dev_opennox_lib_script_Unit) Flee(obj script.Positioner, dur script.Duration) {
+func (W _github_com_noxworld_dev_opennox_lib_script_Unit) Flee(obj script.Positioner, dur ns.Duration) {
 	W.WFlee(obj, dur)
 }
 func (W _github_com_noxworld_dev_opennox_lib_script_Unit) Follow(obj script.Positioner) {
@@ -1278,7 +1279,7 @@ func (W _github_com_noxworld_dev_opennox_lib_script_Unit) RetreatLevel() float32
 func (W _github_com_noxworld_dev_opennox_lib_script_Unit) Return() {
 	W.WReturn()
 }
-func (W _github_com_noxworld_dev_opennox_lib_script_Unit) Say(text string, dur script.Duration) {
+func (W _github_com_noxworld_dev_opennox_lib_script_Unit) Say(text string, dur ns.Duration) {
 	W.WSay(text, dur)
 }
 func (W _github_com_noxworld_dev_opennox_lib_script_Unit) ScriptID() int {
@@ -1332,22 +1333,26 @@ func (W _github_com_noxworld_dev_opennox_lib_script_Unit) Z() float32 {
 
 // _github_com_noxworld_dev_opennox_lib_script_VM is an interface wrapper for VM type
 type _github_com_noxworld_dev_opennox_lib_script_VM struct {
-	IValue    interface{}
-	WClose    func() error
-	WExec     func(s string) error
-	WExecFile func(path string) error
-	WOnEvent  func(typ script.EventType)
-	WOnFrame  func()
+	IValue     interface{}
+	WClose     func() error
+	WExec      func(s string) (reflect.Value, error)
+	WExecFile  func(path string) error
+	WGetSymbol func(name string, typ reflect.Type) (reflect.Value, bool, error)
+	WOnEvent   func(typ script.EventType)
+	WOnFrame   func()
 }
 
 func (W _github_com_noxworld_dev_opennox_lib_script_VM) Close() error {
 	return W.WClose()
 }
-func (W _github_com_noxworld_dev_opennox_lib_script_VM) Exec(s string) error {
+func (W _github_com_noxworld_dev_opennox_lib_script_VM) Exec(s string) (reflect.Value, error) {
 	return W.WExec(s)
 }
 func (W _github_com_noxworld_dev_opennox_lib_script_VM) ExecFile(path string) error {
 	return W.WExecFile(path)
+}
+func (W _github_com_noxworld_dev_opennox_lib_script_VM) GetSymbol(name string, typ reflect.Type) (reflect.Value, bool, error) {
+	return W.WGetSymbol(name, typ)
 }
 func (W _github_com_noxworld_dev_opennox_lib_script_VM) OnEvent(typ script.EventType) {
 	W.WOnEvent(typ)

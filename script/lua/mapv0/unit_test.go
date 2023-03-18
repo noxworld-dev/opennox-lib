@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	ns4 "github.com/noxworld-dev/noxscript/ns/v4"
 	"github.com/stretchr/testify/require"
 
 	"github.com/noxworld-dev/opennox-lib/script"
@@ -154,7 +155,7 @@ func (u *testUnit) Follow(obj script.Positioner) {
 	u.targ = obj.Pos()
 }
 
-func (u *testUnit) Flee(obj script.Positioner, dur script.Duration) {
+func (u *testUnit) Flee(obj script.Positioner, dur ns4.Duration) {
 	u.st = UnitFlee
 	u.targ = obj.Pos()
 }
@@ -208,7 +209,7 @@ func (u *testUnit) RegroupLevel() float32 {
 	return u.regroup
 }
 
-func (u *testUnit) Say(text string, dur script.Duration) {
+func (u *testUnit) Say(text string, dur ns4.Duration) {
 	panic("implement me")
 }
 

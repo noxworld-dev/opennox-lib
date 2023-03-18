@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 
+	ns4 "github.com/noxworld-dev/noxscript/ns/v4"
 	lua "github.com/yuin/gopher-lua"
 
 	"github.com/noxworld-dev/opennox-lib/script"
@@ -251,7 +252,7 @@ func (vm *api) luaValuePush(s *lua.LState, v interface{}) int {
 		lv = vm.newWaypoint(v)
 	case *script.Timer:
 		lv = vm.newTimer(v)
-	case script.Duration:
+	case ns4.Duration:
 		lv = vm.newDuration(v)
 	default:
 		// that's a programming error, not script error

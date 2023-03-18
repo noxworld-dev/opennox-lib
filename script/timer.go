@@ -1,68 +1,27 @@
 package script
 
-import "time"
+import (
+	"time"
 
-func Frames(num int) Duration {
-	return Duration{frames: num}
+	ns4 "github.com/noxworld-dev/noxscript/ns/v4"
+)
+
+func Frames(num int) ns4.Duration {
+	return ns4.Frames(num)
 }
 
-func Time(dt time.Duration) Duration {
-	return Duration{time: dt}
+func Time(dt time.Duration) ns4.Duration {
+	return ns4.Time(dt)
 }
 
-type Duration struct {
-	frames int
-	time   time.Duration
-}
+type Duration = ns4.Duration
 
-func (d Duration) LessOrEq(d2 Duration) bool {
-	if d.IsFrames() && d2.IsFrames() {
-		return d.frames <= d2.frames
-	}
-	if d.IsTime() && d2.IsTime() {
-		return d.time <= d2.time
-	}
-	return false
-}
+type TimeSource = ns4.TimeSource
 
-func (d Duration) Add(d2 Duration) Duration {
-	if d.IsFrames() && d2.IsFrames() {
-		d.frames += d2.frames
-	}
-	if d.IsTime() && d2.IsTime() {
-		d.time += d2.time
-	}
-	return d
-}
-
-func (d Duration) IsTime() bool {
-	return d.time != 0
-}
-
-func (d Duration) IsFrames() bool {
-	return d.frames != 0
-}
-
-func (d Duration) Time() (time.Duration, bool) {
-	return d.time, d.IsTime()
-}
-
-func (d Duration) Frames() (int, bool) {
-	return d.frames, d.IsFrames()
-}
-
-type TimeSource interface {
-	Frame() int
-	Time() time.Duration
-}
-
-func NewTimers(src TimeSource) *Timers {
+func NewTimers(src ns4.TimeSource) *Timers {
 	return &Timers{
-		src: src,
-		cur: Duration{
-			time:   src.Time(),
-			frames: src.Frame(),
-		},
+		src:    src,
+		cur:    ns4.NowWithSource(src),
 		active: make(map[uint]*Timer),
 	}
 }
@@ -70,7 +29,7 @@ func NewTimers(src TimeSource) *Timers {
 type Timers struct {
 	src    TimeSource
 	last   uint
-	cur    Duration
+	cur    ns4.Duration
 	active map[uint]*Timer
 }
 
@@ -78,7 +37,7 @@ func (t *Timers) stopTimer(id uint) {
 	delete(t.active, id)
 }
 
-func (t *Timers) SetTimer(d Duration, fnc func()) *Timer {
+func (t *Timers) SetTimer(d ns4.Duration, fnc func()) *Timer {
 	t.last++
 	tm := &Timer{t: t, id: t.last, at: d.Add(t.cur), fnc: fnc}
 	t.active[tm.id] = tm
@@ -86,10 +45,7 @@ func (t *Timers) SetTimer(d Duration, fnc func()) *Timer {
 }
 
 func (t *Timers) Tick() {
-	t.cur = Duration{
-		frames: t.src.Frame(),
-		time:   t.src.Time(),
-	}
+	t.cur = ns4.NowWithSource(t.src)
 	for _, tm := range t.active {
 		if tm.at.LessOrEq(t.cur) {
 			tm.fnc()
@@ -102,7 +58,7 @@ func (t *Timers) Tick() {
 type Timer struct {
 	t   *Timers
 	id  uint
-	at  Duration
+	at  ns4.Duration
 	fnc func()
 }
 

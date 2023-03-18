@@ -3,6 +3,7 @@ package mapv0
 import (
 	"time"
 
+	ns4 "github.com/noxworld-dev/noxscript/ns/v4"
 	lua "github.com/yuin/gopher-lua"
 
 	"github.com/noxworld-dev/opennox-lib/script"
@@ -20,7 +21,7 @@ func (vm *api) newTimer(v *script.Timer) lua.LValue {
 	return &lua.LUserData{Value: v, Metatable: vm.meta.Timer}
 }
 
-func (vm *api) newDuration(d script.Duration) lua.LValue {
+func (vm *api) newDuration(d ns4.Duration) lua.LValue {
 	return &lua.LUserData{Value: d, Metatable: vm.meta.Dur}
 }
 
@@ -29,7 +30,7 @@ func (vm *api) initMetaTimer() {
 	vm.meta.Dur = vm.newMeta("")
 }
 
-func (vm *api) luaNewTimer(dur script.Duration, s *lua.LState, off int) int {
+func (vm *api) luaNewTimer(dur ns4.Duration, s *lua.LState, off int) int {
 	fnc := s.CheckFunction(off)
 	var args []lua.LValue
 	for i := off + 1; i <= s.GetTop(); i++ {
@@ -75,7 +76,7 @@ func (vm *api) initTimer() {
 	}))
 	// Nox.Timer(dur, fnc)
 	vm.meta.Timer.RawSetString("__call", vm.s.NewFunction(func(s *lua.LState) int {
-		dur, ok := s.CheckUserData(2).Value.(script.Duration)
+		dur, ok := s.CheckUserData(2).Value.(ns4.Duration)
 		if !ok {
 			return 0
 		}

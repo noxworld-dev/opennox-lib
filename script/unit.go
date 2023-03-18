@@ -3,6 +3,8 @@ package script
 import (
 	"fmt"
 
+	ns4 "github.com/noxworld-dev/noxscript/ns/v4"
+
 	"github.com/noxworld-dev/opennox-lib/spell"
 	"github.com/noxworld-dev/opennox-lib/types"
 )
@@ -41,7 +43,7 @@ type Mobile interface {
 	// Follow a given object.
 	Follow(obj Positioner)
 	// Flee from a given object for a certain duration.
-	Flee(obj Positioner, dur Duration)
+	Flee(obj Positioner, dur ns4.Duration)
 }
 
 // MoveToPos is a helper to make an objects walk to another object's location. More generic than WalkToPos.
@@ -106,7 +108,7 @@ func HitRangedPos(obj OffensiveGroup, to Positioner) {
 type Chatty interface {
 	// Say displays the chat bubble on this object.
 	// If the duration is set, the bubble will disappear after it passes.
-	Say(text string, dur Duration)
+	Say(text string, dur ns4.Duration)
 	// Mute removes the current chat bubble, if any.
 	Mute()
 }
@@ -349,7 +351,7 @@ func (g *UnitGroup) Follow(obj Positioner) {
 	}
 }
 
-func (g *UnitGroup) Flee(obj Positioner, dur Duration) {
+func (g *UnitGroup) Flee(obj Positioner, dur ns4.Duration) {
 	if g == nil {
 		return
 	}

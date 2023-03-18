@@ -3,6 +3,7 @@ package mapv0
 import (
 	"strings"
 
+	ns4 "github.com/noxworld-dev/noxscript/ns/v4"
 	lua "github.com/yuin/gopher-lua"
 
 	"github.com/noxworld-dev/opennox-lib/script"
@@ -78,8 +79,8 @@ func (vm *api) initMetaUnit() {
 		obj.Follow(obj2)
 		return
 	})
-	vm.registerObjMethod("Flee", func(obj script.Mobile, obj2 script.Positioner, dur *script.Duration) (_ receiverValue) {
-		var d script.Duration
+	vm.registerObjMethod("Flee", func(obj script.Mobile, obj2 script.Positioner, dur *ns4.Duration) (_ receiverValue) {
+		var d ns4.Duration
 		if dur != nil {
 			d = *dur
 		}
@@ -117,8 +118,8 @@ func (vm *api) initMetaUnit() {
 	})
 
 	// Chatty
-	vm.registerObjMethod("Say", func(obj script.Chatty, text string, dur *script.Duration) (_ receiverValue) {
-		var d script.Duration
+	vm.registerObjMethod("Say", func(obj script.Chatty, text string, dur *ns4.Duration) (_ receiverValue) {
+		var d ns4.Duration
 		if dur != nil {
 			d = *dur
 		}
