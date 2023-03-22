@@ -12,10 +12,10 @@ require (
 	github.com/noxworld-dev/noxscript/eud/v171 v171.2.1
 	github.com/noxworld-dev/noxscript/ns v1.0.2
 	github.com/noxworld-dev/noxscript/ns/v3 v3.1.5
-	github.com/noxworld-dev/noxscript/ns/v4 v4.3.1
+	github.com/noxworld-dev/noxscript/ns/v4 v4.4.0
 	github.com/spf13/cobra v1.5.0
 	github.com/stretchr/testify v1.8.2
-	github.com/traefik/yaegi v0.15.0
+	github.com/traefik/yaegi v0.15.1-0.20230321105005-c4a297cbdcfd
 	github.com/veandco/go-sdl2 v0.4.25
 	github.com/yuin/gopher-lua v0.0.0-20220504180219-658193537a64
 	golang.org/x/exp v0.0.0-20221031165847-c99f073a8326
