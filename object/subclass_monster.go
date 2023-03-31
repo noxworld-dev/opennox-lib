@@ -28,26 +28,26 @@ var _ enum[MonsterClass] = MonsterClass(0)
 type MonsterClass uint32
 
 const (
-	MonsterSmall = MonsterClass(1 << iota)
-	MonsterMedium
-	MonsterLarge
-	MonsterShopkeeper
-	MonsterNPC
-	MonsterFemaleNPC
-	MonsterUndead
-	MonsterMonitor
-	MonsterMigrate
-	MonsterImmunePoison
-	MonsterImmuneFire
-	MonsterImmuneElectricity
-	MonsterImmuneFear
-	MonsterBomber
-	MonsterNoTarget
-	MonsterNoSpellTarget
-	MonsterHasSoul
-	MonsterWarcryStun
-	MonsterLookAround
-	MonsterWoundedNPC
+	MonsterSmall             = MonsterClass(1 << iota) // 0x1
+	MonsterMedium                                      // 0x2
+	MonsterLarge                                       // 0x4
+	MonsterShopkeeper                                  // 0x8
+	MonsterNPC                                         // 0x10
+	MonsterFemaleNPC                                   // 0x20
+	MonsterUndead                                      // 0x40
+	MonsterMonitor                                     // 0x80
+	MonsterMigrate                                     // 0x100
+	MonsterImmunePoison                                // 0x200
+	MonsterImmuneFire                                  // 0x400
+	MonsterImmuneElectricity                           // 0x800
+	MonsterImmuneFear                                  // 0x1000
+	MonsterBomber                                      // 0x2000
+	MonsterNoTarget                                    // 0x4000
+	MonsterNoSpellTarget                               // 0x8000
+	MonsterHasSoul                                     // 0x10000
+	MonsterWarcryStun                                  // 0x20000
+	MonsterLookAround                                  // 0x40000
+	MonsterWoundedNPC                                  // 0x80000
 )
 
 func (c MonsterClass) Has(c2 MonsterClass) bool {

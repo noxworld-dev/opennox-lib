@@ -26,19 +26,19 @@ var _ enum[OtherClass] = OtherClass(0)
 type OtherClass uint32
 
 const (
-	OtherHeavy = OtherClass(1 << iota)
-	OtherLava
-	OtherGate
-	OtherVisibleObelisk
-	OtherInvisibleObelisk
-	OtherTech
-	OtherLOTD
-	OtherUseable
-	OtherChestNW
-	OtherChestNE
-	OtherChestSE
-	OtherChestSW
-	OtherStoneDoor
+	OtherHeavy            = OtherClass(1 << iota) // 0x1
+	OtherLava                                     // 0x2
+	OtherGate                                     // 0x4
+	OtherVisibleObelisk                           // 0x8
+	OtherInvisibleObelisk                         // 0x10
+	OtherTech                                     // 0x20
+	OtherLOTD                                     // 0x40
+	OtherUseable                                  // 0x80
+	OtherChestNW                                  // 0x100
+	OtherChestNE                                  // 0x200
+	OtherChestSE                                  // 0x400
+	OtherChestSW                                  // 0x800
+	OtherStoneDoor                                // 0x1000
 )
 
 func (c OtherClass) Has(c2 OtherClass) bool {

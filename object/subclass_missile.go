@@ -26,8 +26,8 @@ var _ enum[MissileClass] = MissileClass(0)
 type MissileClass uint32
 
 const (
-	MissileMissileCounterSpell = MissileClass(1 << iota)
-	MissileMagic
+	MissileMissileCounterSpell = MissileClass(1 << iota) // 0x1
+	MissileMagic                                         // 0x2
 )
 
 func (c MissileClass) Has(c2 MissileClass) bool {

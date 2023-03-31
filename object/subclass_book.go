@@ -27,9 +27,9 @@ var _ enum[BookClass] = BookClass(0)
 type BookClass uint32
 
 const (
-	BookSpell = BookClass(1 << iota)
-	BookFieldGuide
-	BookAbility
+	BookSpell      = BookClass(1 << iota) // 0x1
+	BookFieldGuide                        // 0x2
+	BookAbility                           // 0x4
 )
 
 func (c BookClass) Has(c2 BookClass) bool {

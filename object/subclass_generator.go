@@ -28,10 +28,10 @@ var _ enum[GeneratorClass] = GeneratorClass(0)
 type GeneratorClass uint32
 
 const (
-	GeneratorNW = GeneratorClass(1 << iota)
-	GeneratorNE
-	GeneratorSE
-	GeneratorSW
+	GeneratorNW = GeneratorClass(1 << iota) // 0x1
+	GeneratorNE                             // 0x2
+	GeneratorSE                             // 0x4
+	GeneratorSW                             // 0x8
 )
 
 func (c GeneratorClass) Has(c2 GeneratorClass) bool {

@@ -26,8 +26,8 @@ var _ enum[ExitClass] = ExitClass(0)
 type ExitClass uint32
 
 const (
-	ExitQuest = ExitClass(1 << iota)
-	ExitQuestWarp
+	ExitQuest     = ExitClass(1 << iota) // 0x1
+	ExitQuestWarp                        // 0x2
 )
 
 func (c ExitClass) Has(c2 ExitClass) bool {

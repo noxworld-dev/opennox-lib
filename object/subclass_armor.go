@@ -25,15 +25,15 @@ var _ enum[ArmorClass] = ArmorClass(0)
 type ArmorClass uint32
 
 const (
-	ArmorHelmet = ArmorClass(1 << iota)
-	ArmorShield
-	ArmorBreastplate
-	ArmorArmArmor
-	ArmorPants
-	ArmorBoots
-	ArmorShirt
-	ArmorLegArmor
-	ArmorBack
+	ArmorHelmet      = ArmorClass(1 << iota) // 0x1
+	ArmorShield                              // 0x2
+	ArmorBreastplate                         // 0x4
+	ArmorArmArmor                            // 0x8
+	ArmorPants                               // 0x10
+	ArmorBoots                               // 0x20
+	ArmorShirt                               // 0x40
+	ArmorLegArmor                            // 0x80
+	ArmorBack                                // 0x100
 )
 
 func (c ArmorClass) Has(c2 ArmorClass) bool {
