@@ -4,7 +4,6 @@
 package ifs
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -14,7 +13,7 @@ import (
 )
 
 func TestNormalize(t *testing.T) {
-	dir, err := ioutil.TempDir("", "nox_fs_")
+	dir, err := os.MkdirTemp("", "nox_fs_")
 	require.NoError(t, err)
 	defer os.RemoveAll(dir)
 
@@ -23,7 +22,7 @@ func TestNormalize(t *testing.T) {
 	require.NoError(t, err)
 	file1 := filepath.Join(dir1, "File.txt")
 
-	err = ioutil.WriteFile(file1, []byte("data"), 0644)
+	err = os.WriteFile(file1, []byte("data"), 0644)
 	require.NoError(t, err)
 
 	require.Equal(t,

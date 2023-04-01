@@ -4,7 +4,6 @@
 package ifs
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -30,7 +29,7 @@ func Denormalize(path string) string {
 }
 
 func findCaseInsensitive(dir string, name string) string {
-	list, err := ioutil.ReadDir(dir)
+	list, err := os.ReadDir(dir)
 	if err != nil {
 		return name
 	}

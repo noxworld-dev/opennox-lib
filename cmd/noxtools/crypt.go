@@ -2,7 +2,7 @@ package main
 
 import (
 	"errors"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -41,7 +41,7 @@ func cmdCryptEncode(cmd *cobra.Command, args []string, enc bool, fkey *int) erro
 		}
 	}
 	// TODO: stream file
-	data, err := ioutil.ReadFile(in)
+	data, err := os.ReadFile(in)
 	if err != nil {
 		return err
 	}
@@ -53,7 +53,7 @@ func cmdCryptEncode(cmd *cobra.Command, args []string, enc bool, fkey *int) erro
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(out, data, 0644)
+	return os.WriteFile(out, data, 0644)
 }
 
 func init() {
