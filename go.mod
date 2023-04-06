@@ -15,13 +15,13 @@ require (
 	github.com/noxworld-dev/noxscript/ns/v4 v4.4.0
 	github.com/spf13/cobra v1.5.0
 	github.com/stretchr/testify v1.8.2
-	github.com/traefik/yaegi v0.15.1-0.20230321105005-c4a297cbdcfd
+	github.com/traefik/yaegi v0.15.1
 	github.com/veandco/go-sdl2 v0.4.25
 	github.com/yuin/gopher-lua v0.0.0-20220504180219-658193537a64
 	golang.org/x/exp v0.0.0-20221031165847-c99f073a8326
 	golang.org/x/image v0.0.0-20220902085622-e7cb96979f69
 	golang.org/x/sys v0.1.0
-	golang.org/x/text v0.3.7
+	golang.org/x/text v0.3.8
 	gopkg.in/yaml.v2 v2.4.0
 )
 
