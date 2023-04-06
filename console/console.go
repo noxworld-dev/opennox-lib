@@ -372,23 +372,26 @@ func (cn *Console) Commands() []*Command {
 	return cn.cmds
 }
 
+func cmdForToken(cmds []*Command, token string) *Command {
+	for i, cur := range cmds {
+		tok := token
+		if cur.Flags.Has(Secret) {
+			tok = EncodeSecret(tok)
+		}
+		if tok == cur.Token {
+			return cmds[i]
+		}
+	}
+	return nil
+}
+
 // ParseToken matches the first token against a list of commands.
 func (cn *Console) ParseToken(ctx context.Context, tokInd int, tokens []string, cmds []*Command) bool {
 	if tokInd >= len(tokens) || len(cmds) == 0 {
 		return false
 	}
 
-	var cmd *Command
-	for i, cur := range cmds {
-		tok := tokens[tokInd]
-		if cur.Flags.Has(Secret) {
-			tok = EncodeSecret(tok)
-		}
-		if tok == cur.Token {
-			cmd = cmds[i]
-			break
-		}
-	}
+	cmd := cmdForToken(cmds, tokens[tokInd])
 	if cmd == nil {
 		return false
 	}
@@ -438,7 +441,8 @@ func (cn *Console) ParseToken(ctx context.Context, tokInd int, tokens []string, 
 
 // Exec a given console command.
 func (cn *Console) Exec(ctx context.Context, cmd string) bool {
-	ctx = withCommand(ctx, cmd)
+	raw := cmd
+	ctx = withCommand(ctx, raw)
 	var (
 		tokens []string
 	)
@@ -473,7 +477,15 @@ func (cn *Console) Exec(ctx context.Context, cmd string) bool {
 	if len(tokens) == 0 {
 		return false
 	}
-	ok := cn.ParseToken(ctx, 0, tokens, cn.Commands())
+	var ok bool
+	// TODO: properly support raw commands by searching sub-commands token-by-token
+	if c := cmdForToken(cn.Commands(), tokens[0]); c != nil && c.Raw {
+		raw = strings.TrimPrefix(raw, c.Token)
+		raw = strings.TrimSpace(raw)
+		ok = cn.ParseToken(ctx, 0, []string{c.Token, raw}, cn.Commands())
+	} else {
+		ok = cn.ParseToken(ctx, 0, tokens, cn.Commands())
+	}
 	if !ok {
 		help := cn.sm.GetStringInFile("typehelp", "parsecmd.c")
 		cn.p.Print(ColorRed, help)

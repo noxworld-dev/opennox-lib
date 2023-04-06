@@ -79,6 +79,9 @@ type Command struct {
 	//
 	// Deprecated: use Func instead.
 	LegacyFunc CommandLegacyFunc
+	// Raw disables parsing of the rest of the tokens.
+	// Command will receive a single token containing the rest of the line.
+	Raw bool
 }
 
 // Register a sub command handler.
