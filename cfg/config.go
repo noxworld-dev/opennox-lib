@@ -40,18 +40,20 @@ type File struct {
 func Parse(r io.Reader) (*File, error) {
 	sc := bufio.NewScanner(r)
 	f := &File{}
-	sectDone := true
+	var cur Section
 	add := func(kv KeyValue) {
 		if kv == (KeyValue{}) {
 			return
 		}
-		if sectDone {
-			f.Sections = append(f.Sections, Section{})
-			sectDone = false
-		}
-		n := len(f.Sections)
-		f.Sections[n-1] = append(f.Sections[n-1], kv)
+		cur = append(cur, kv)
 	}
+	done := func(force bool) {
+		if force || len(cur) != 0 {
+			f.Sections = append(f.Sections, cur)
+			cur = nil
+		}
+	}
+	defer done(false)
 	comment := ""
 	for sc.Scan() {
 		line := sc.Text()
@@ -67,7 +69,7 @@ func Parse(r io.Reader) (*File, error) {
 		kv := KeyValue{Comment: comment}
 		if strings.HasPrefix(line, "---") {
 			add(kv)
-			sectDone = true
+			done(true)
 			continue
 		}
 		comment = ""
