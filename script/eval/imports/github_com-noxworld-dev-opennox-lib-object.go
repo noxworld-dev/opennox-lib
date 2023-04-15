@@ -3,9 +3,8 @@
 package imports
 
 import (
-	"reflect"
-
 	"github.com/noxworld-dev/opennox-lib/object"
+	"reflect"
 )
 
 func init() {
@@ -159,6 +158,28 @@ func init() {
 		"MissileClassNames":            reflect.ValueOf(&object.MissileClassNames).Elem(),
 		"MissileMagic":                 reflect.ValueOf(object.MissileMagic),
 		"MissileMissileCounterSpell":   reflect.ValueOf(object.MissileMissileCounterSpell),
+		"MonStatusAlert":               reflect.ValueOf(object.MonStatusAlert),
+		"MonStatusAlwaysRun":           reflect.ValueOf(object.MonStatusAlwaysRun),
+		"MonStatusBot":                 reflect.ValueOf(object.MonStatusBot),
+		"MonStatusCanBlock":            reflect.ValueOf(object.MonStatusCanBlock),
+		"MonStatusCanCastSpells":       reflect.ValueOf(object.MonStatusCanCastSpells),
+		"MonStatusCanDodge":            reflect.ValueOf(object.MonStatusCanDodge),
+		"MonStatusCanHealOthers":       reflect.ValueOf(object.MonStatusCanHealOthers),
+		"MonStatusCanHealSelf":         reflect.ValueOf(object.MonStatusCanHealSelf),
+		"MonStatusCanRun":              reflect.ValueOf(object.MonStatusCanRun),
+		"MonStatusCanSeeFriends":       reflect.ValueOf(object.MonStatusCanSeeFriends),
+		"MonStatusCheck":               reflect.ValueOf(object.MonStatusCheck),
+		"MonStatusDestroyWhenDead":     reflect.ValueOf(object.MonStatusDestroyWhenDead),
+		"MonStatusFrustrated":          reflect.ValueOf(object.MonStatusFrustrated),
+		"MonStatusHoldYourGround":      reflect.ValueOf(object.MonStatusHoldYourGround),
+		"MonStatusInjured":             reflect.ValueOf(object.MonStatusInjured),
+		"MonStatusMorphed":             reflect.ValueOf(object.MonStatusMorphed),
+		"MonStatusNeverRun":            reflect.ValueOf(object.MonStatusNeverRun),
+		"MonStatusOnFire":              reflect.ValueOf(object.MonStatusOnFire),
+		"MonStatusRunning":             reflect.ValueOf(object.MonStatusRunning),
+		"MonStatusStayDead":            reflect.ValueOf(object.MonStatusStayDead),
+		"MonStatusSummoned":            reflect.ValueOf(object.MonStatusSummoned),
+		"MonStatusUnused5":             reflect.ValueOf(object.MonStatusUnused5),
 		"MonsterBomber":                reflect.ValueOf(object.MonsterBomber),
 		"MonsterClassNames":            reflect.ValueOf(&object.MonsterClassNames).Elem(),
 		"MonsterFemaleNPC":             reflect.ValueOf(object.MonsterFemaleNPC),
@@ -177,6 +198,7 @@ func init() {
 		"MonsterNoTarget":              reflect.ValueOf(object.MonsterNoTarget),
 		"MonsterShopkeeper":            reflect.ValueOf(object.MonsterShopkeeper),
 		"MonsterSmall":                 reflect.ValueOf(object.MonsterSmall),
+		"MonsterStatusNames":           reflect.ValueOf(&object.MonsterStatusNames).Elem(),
 		"MonsterUndead":                reflect.ValueOf(object.MonsterUndead),
 		"MonsterWarcryStun":            reflect.ValueOf(object.MonsterWarcryStun),
 		"MonsterWoundedNPC":            reflect.ValueOf(object.MonsterWoundedNPC),
@@ -215,6 +237,8 @@ func init() {
 		"ParseMissileClassSet":         reflect.ValueOf(object.ParseMissileClassSet),
 		"ParseMonsterClass":            reflect.ValueOf(object.ParseMonsterClass),
 		"ParseMonsterClassSet":         reflect.ValueOf(object.ParseMonsterClassSet),
+		"ParseMonsterStatus":           reflect.ValueOf(object.ParseMonsterStatus),
+		"ParseMonsterStatusSet":        reflect.ValueOf(object.ParseMonsterStatusSet),
 		"ParseOtherClass":              reflect.ValueOf(object.ParseOtherClass),
 		"ParseOtherClassSet":           reflect.ValueOf(object.ParseOtherClassSet),
 		"ParseSubClass":                reflect.ValueOf(object.ParseSubClass),
@@ -263,6 +287,7 @@ func init() {
 		"Material":       reflect.ValueOf((*object.Material)(nil)),
 		"MissileClass":   reflect.ValueOf((*object.MissileClass)(nil)),
 		"MonsterClass":   reflect.ValueOf((*object.MonsterClass)(nil)),
+		"MonsterStatus":  reflect.ValueOf((*object.MonsterStatus)(nil)),
 		"OtherClass":     reflect.ValueOf((*object.OtherClass)(nil)),
 		"SubClass":       reflect.ValueOf((*object.SubClass)(nil)),
 		"WeaponClass":    reflect.ValueOf((*object.WeaponClass)(nil)),
