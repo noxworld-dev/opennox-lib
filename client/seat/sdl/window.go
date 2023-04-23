@@ -22,6 +22,8 @@ var _ seat.Seat = &Window{}
 
 // New creates a new SDL window which implements a Seat interface.
 func New(title string, sz image.Point) (*Window, error) {
+	// That hint won't work if it is called after sdl.Init
+	sdl.SetHint(sdl.HINT_WINDOWS_DPI_AWARENESS, "permonitorv2")
 	// TODO: if we ever decide to use multiple windows, this will need to be moved elsewhere; same for sdl.Quit
 	if err := sdl.Init(sdl.INIT_VIDEO | sdl.INIT_TIMER); err != nil {
 		return nil, fmt.Errorf("SDL Initialization failed: %w", err)
@@ -44,7 +46,7 @@ func New(title string, sz image.Point) (*Window, error) {
 	}
 
 	win, err := sdl.CreateWindow(title, sdl.WINDOWPOS_UNDEFINED, sdl.WINDOWPOS_UNDEFINED, int32(sz.X), int32(sz.Y),
-		sdl.WINDOW_RESIZABLE|sdl.WINDOW_OPENGL)
+		sdl.WINDOW_RESIZABLE|sdl.WINDOW_OPENGL|sdl.WINDOW_ALLOW_HIGHDPI)
 	if err != nil {
 		sdl.Quit()
 		return nil, fmt.Errorf("SDL Window creation failed: %w", err)
@@ -186,7 +188,7 @@ func (win *Window) SetScreenMode(mode seat.ScreenMode) {
 		win.win.SetResizable(false)
 		win.win.SetBordered(false)
 		win.setSize(win.ScreenMaxSize())
-		win.win.SetFullscreen(sdl.WINDOW_FULLSCREEN_DESKTOP)
+		win.win.SetFullscreen(uint32(sdl.WINDOW_FULLSCREEN_DESKTOP))
 		sdl.ShowCursor(sdl.DISABLE)
 		win.setRelative(true)
 	case seat.Borderless:

@@ -5,7 +5,6 @@ go 1.20
 require (
 	github.com/go-gl/gl v0.0.0-20211210172815-726fda9656d6
 	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20221017161538-93cebf72946b
-	github.com/go-gl/mathgl v1.0.0
 	github.com/icza/bitio v1.1.0
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/noxworld-dev/noxcrypt v0.0.0-20220809211245-2c69b67c4ae9
@@ -16,7 +15,7 @@ require (
 	github.com/spf13/cobra v1.5.0
 	github.com/stretchr/testify v1.8.2
 	github.com/traefik/yaegi v0.15.1
-	github.com/veandco/go-sdl2 v0.4.25
+	github.com/veandco/go-sdl2 v0.5.0-alpha.4
 	github.com/yuin/gopher-lua v0.0.0-20220504180219-658193537a64
 	golang.org/x/exp v0.0.0-20221031165847-c99f073a8326
 	golang.org/x/image v0.0.0-20220902085622-e7cb96979f69

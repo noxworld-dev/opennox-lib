@@ -38,30 +38,30 @@ func (win *Window) InputTick() {
 		case nil:
 			// no more events
 			return
-		case *sdl.TextEditingEvent:
-			win.processTextEditingEvent(ev)
-		case *sdl.TextInputEvent:
-			win.processTextInputEvent(ev)
-		case *sdl.KeyboardEvent:
-			win.processKeyboardEvent(ev)
-		case *sdl.MouseButtonEvent:
-			win.processMouseButtonEvent(ev)
-		case *sdl.MouseMotionEvent:
-			win.processMotionEvent(ev)
-		case *sdl.MouseWheelEvent:
-			win.processWheelEvent(ev)
-		case *sdl.ControllerAxisEvent:
+		case sdl.TextEditingEvent:
+			win.processTextEditingEvent(&ev)
+		case sdl.TextInputEvent:
+			win.processTextInputEvent(&ev)
+		case sdl.KeyboardEvent:
+			win.processKeyboardEvent(&ev)
+		case sdl.MouseButtonEvent:
+			win.processMouseButtonEvent(&ev)
+		case sdl.MouseMotionEvent:
+			win.processMotionEvent(&ev)
+		case sdl.MouseWheelEvent:
+			win.processWheelEvent(&ev)
+		case sdl.ControllerAxisEvent:
 			if debugGpad {
 				Log.Printf("SDL event: SDL_CONTROLLERAXISMOTION (%x): joy=%d, axis=%d, val=%d\n",
 					ev.GetType(), ev.Which, ev.Axis, ev.Value)
 			}
-			win.processGamepadAxisEvent(ev)
-		case *sdl.ControllerButtonEvent:
+			win.processGamepadAxisEvent(&ev)
+		case sdl.ControllerButtonEvent:
 			if debugGpad {
 				Log.Printf("SDL event: SDL_CONTROLLERBUTTON (%x): joy=%d, btn=%d, state=%d\n",
 					ev.GetType(), ev.Which, ev.Button, ev.State)
 			}
-			win.processGamepadButtonEvent(ev)
+			win.processGamepadButtonEvent(&ev)
 		case *sdl.ControllerDeviceEvent:
 			switch ev.GetType() {
 			case sdl.CONTROLLERDEVICEADDED:
@@ -79,10 +79,10 @@ func (win *Window) InputTick() {
 					Log.Printf("SDL event: SDL_CONTROLLERDEVICEREMAPPED (%x)\n", ev.GetType())
 				}
 			}
-		case *sdl.WindowEvent:
-			win.processWindowEvent(ev)
-		case *sdl.QuitEvent:
-			win.processQuitEvent(ev)
+		case sdl.WindowEvent:
+			win.processWindowEvent(&ev)
+		case sdl.QuitEvent:
+			win.processQuitEvent(&ev)
 		}
 		// TODO: touch events for WASM
 	}
@@ -99,7 +99,7 @@ func (win *Window) processQuitEvent(ev *sdl.QuitEvent) {
 }
 
 func (win *Window) processWindowEvent(ev *sdl.WindowEvent) {
-	switch ev.GetType() {
+	switch ev.Event {
 	case sdl.WINDOWEVENT_FOCUS_LOST:
 		win.inputEvent(seat.WindowUnfocused)
 	case sdl.WINDOWEVENT_FOCUS_GAINED:
