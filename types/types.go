@@ -66,31 +66,24 @@ func (p Pointf) Normalize() Pointf {
 }
 
 type Rectf struct {
-	Left   float32
-	Top    float32
-	Right  float32
-	Bottom float32
+	Min Pointf
+	Max Pointf
 }
 
 func (r *Rectf) IsEmpty() bool {
-	return r.Right <= r.Left || r.Bottom <= r.Top
+	return r.Max.X <= r.Min.X || r.Max.Y <= r.Min.Y
+}
+
+func (r Rectf) Canon() Rectf {
+	if r.Max.X < r.Min.X {
+		r.Min.X, r.Max.X = r.Max.X, r.Min.X
+	}
+	if r.Max.Y < r.Min.Y {
+		r.Min.Y, r.Max.Y = r.Max.Y, r.Min.Y
+	}
+	return r
 }
 
 func RectFromPointsf(p1, p2 Pointf) Rectf {
-	var r Rectf
-	if p1.X >= p2.X {
-		r.Left = p2.X
-		r.Right = p1.X
-	} else {
-		r.Left = p1.X
-		r.Right = p2.X
-	}
-	if p1.Y >= p2.Y {
-		r.Top = p2.Y
-		r.Bottom = p1.Y
-	} else {
-		r.Top = p1.Y
-		r.Bottom = p2.Y
-	}
-	return r
+	return Rectf{Min: p1, Max: p2}.Canon()
 }
