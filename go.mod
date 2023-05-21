@@ -5,12 +5,13 @@ go 1.20
 require (
 	github.com/go-gl/gl v0.0.0-20211210172815-726fda9656d6
 	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20221017161538-93cebf72946b
+	github.com/go-gl/mathgl v1.0.0
 	github.com/icza/bitio v1.1.0
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/noxworld-dev/noxcrypt v0.0.0-20220809211245-2c69b67c4ae9
 	github.com/noxworld-dev/noxscript/eud/v171 v171.2.1
 	github.com/noxworld-dev/noxscript/ns v1.0.2
-	github.com/noxworld-dev/noxscript/ns/v3 v3.1.5
+	github.com/noxworld-dev/noxscript/ns/v3 v3.1.7
 	github.com/noxworld-dev/noxscript/ns/v4 v4.4.0
 	github.com/spf13/cobra v1.5.0
 	github.com/stretchr/testify v1.8.2
