@@ -263,6 +263,11 @@ func (r *Reader) ReadSections() error {
 			if err := r.m.ScriptData.UnmarshalBinary(data); err != nil {
 				return err
 			}
+		case "SecretWalls":
+			r.m.SecretWalls = new(SecretWalls)
+			if err := r.m.SecretWalls.UnmarshalBinary(data); err != nil {
+				return err
+			}
 		default:
 			r.m.Unknown = append(r.m.Unknown, RawSection{
 				Name: sect,
