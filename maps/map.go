@@ -63,6 +63,7 @@ type Map struct {
 	Script      *Script
 	ScriptData  *ScriptData
 	SecretWalls *SecretWalls
+	WindowWalls *WindowWalls
 	Unknown     []RawSection
 }
 
