@@ -56,15 +56,16 @@ type Map struct {
 	wallOffX uint32
 	wallOffY uint32
 
-	Intro       *MapIntro
-	Ambient     *AmbientData
-	Walls       *WallMap
-	Floor       *FloorMap
-	Script      *Script
-	ScriptData  *ScriptData
-	SecretWalls *SecretWalls
-	WindowWalls *WindowWalls
-	Unknown     []RawSection
+	Intro             *MapIntro
+	Ambient           *AmbientData
+	Walls             *WallMap
+	Floor             *FloorMap
+	Script            *Script
+	ScriptData        *ScriptData
+	SecretWalls       *SecretWalls
+	WindowWalls       *WindowWalls
+	DestructableWalls *DestructableWalls
+	Unknown           []RawSection
 }
 
 // GridBoundingBox returns a bounding box for all walls and tiles on the map.
