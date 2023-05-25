@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/noxworld-dev/opennox-lib/strman"
+	"github.com/noxworld-dev/opennox-lib/types"
 )
 
 var (
@@ -96,11 +97,7 @@ type Class string
 type SubClass string
 type Material string
 
-type RGB struct {
-	R byte `json:"r"`
-	G byte `json:"g"`
-	B byte `json:"b"`
-}
+type RGB = types.RGB
 
 type ProcFunc struct {
 	Name string   `json:"name"`

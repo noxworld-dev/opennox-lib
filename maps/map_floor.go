@@ -4,6 +4,8 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+
+	"github.com/noxworld-dev/opennox-lib/binenc"
 )
 
 func init() {
@@ -28,15 +30,28 @@ func (g *GridData) MarshalBinary() ([]byte, error) {
 	return data, nil
 }
 
-func (g *GridData) UnmarshalBinary(data []byte) error {
-	if len(data) < 18 {
+func (g *GridData) Decode(r *binenc.Reader) error {
+	var ok bool
+	g.Prefix, ok = r.ReadU16()
+	if !ok {
 		return io.ErrUnexpectedEOF
 	}
-	g.Prefix = binary.LittleEndian.Uint16(data[0:])
-	g.Var1 = binary.LittleEndian.Uint32(data[2:])
-	g.Var2 = binary.LittleEndian.Uint32(data[6:])
-	g.Var3 = binary.LittleEndian.Uint32(data[10:])
-	g.Var4 = binary.LittleEndian.Uint32(data[14:])
+	g.Var1, ok = r.ReadU32()
+	if !ok {
+		return io.ErrUnexpectedEOF
+	}
+	g.Var2, ok = r.ReadU32()
+	if !ok {
+		return io.ErrUnexpectedEOF
+	}
+	g.Var3, ok = r.ReadU32()
+	if !ok {
+		return io.ErrUnexpectedEOF
+	}
+	g.Var4, ok = r.ReadU32()
+	if !ok {
+		return io.ErrUnexpectedEOF
+	}
 	return nil
 }
 
@@ -56,14 +71,24 @@ func (e *Edge) MarshalBinary() ([]byte, error) {
 	return data, nil
 }
 
-func (e *Edge) UnmarshalBinary(data []byte) error {
-	if len(data) < 5 {
+func (e *Edge) Decode(r *binenc.Reader) error {
+	var ok bool
+	e.Image, ok = r.ReadU8()
+	if !ok {
 		return io.ErrUnexpectedEOF
 	}
-	e.Image = data[0]
-	e.Variant = binary.LittleEndian.Uint16(data[1:])
-	e.Edge = data[3]
-	e.Dir = data[4]
+	e.Variant, ok = r.ReadU16()
+	if !ok {
+		return io.ErrUnexpectedEOF
+	}
+	e.Edge, ok = r.ReadU8()
+	if !ok {
+		return io.ErrUnexpectedEOF
+	}
+	e.Dir, ok = r.ReadU8()
+	if !ok {
+		return io.ErrUnexpectedEOF
+	}
 	return nil
 }
 
@@ -100,26 +125,31 @@ func (t *Tile) MarshalBinary() ([]byte, error) {
 	return data, nil
 }
 
-func (t *Tile) UnmarshalBinary(data []byte) error {
-	if len(data) < 6 {
+func (t *Tile) Decode(r *binenc.Reader) error {
+	var ok bool
+	t.Image, ok = r.ReadU8()
+	if !ok {
 		return io.ErrUnexpectedEOF
 	}
-	t.Image = data[0]
-	t.Variant = binary.LittleEndian.Uint16(data[1:])
+	t.Variant, ok = r.ReadU16()
+	if !ok {
+		return io.ErrUnexpectedEOF
+	}
 	// TODO: check in the engine what this is
-	t.Field4 = binary.LittleEndian.Uint16(data[3:])
-	n := data[5]
-	data = data[6:]
-	if len(data) < 5*int(n) {
+	t.Field4, ok = r.ReadU16()
+	if !ok {
+		return io.ErrUnexpectedEOF
+	}
+	n, ok := r.ReadU8()
+	if !ok {
 		return io.ErrUnexpectedEOF
 	}
 	t.Edges = make([]Edge, 0, n)
 	for i := 0; i < int(n); i++ {
 		var e Edge
-		if err := e.UnmarshalBinary(data[:5]); err != nil {
+		if err := e.Decode(r); err != nil {
 			return err
 		}
-		data = data[5:]
 		t.Edges = append(t.Edges, e)
 	}
 	return nil
@@ -195,13 +225,15 @@ func (p *TilePair) MarshalBinary() ([]byte, error) {
 	return data, nil
 }
 
-func (p *TilePair) UnmarshalBinary(data []byte) error {
-	if len(data) < 2 {
+func (p *TilePair) Decode(r *binenc.Reader) error {
+	x, ok := r.ReadU8()
+	if !ok {
 		return io.ErrUnexpectedEOF
 	}
-	x := data[0]
-	y := data[1]
-	data = data[2:]
+	y, ok := r.ReadU8()
+	if !ok {
+		return io.ErrUnexpectedEOF
+	}
 	*p = TilePair{}
 	if x == 0xff && y == 0xff {
 		return nil
@@ -213,17 +245,15 @@ func (p *TilePair) UnmarshalBinary(data []byte) error {
 	p.Pos = FloorPos{X: uint16(x & 0x7c), Y: uint16(y & 0x7c)}
 	if hasR {
 		p.R = new(Tile)
-		if err := p.R.UnmarshalBinary(data); err != nil {
+		if err := p.R.Decode(r); err != nil {
 			return err
 		}
-		data = data[p.R.size():]
 	}
 	if hasL {
 		p.L = new(Tile)
-		if err := p.L.UnmarshalBinary(data); err != nil {
+		if err := p.L.Decode(r); err != nil {
 			return err
 		}
-		data = data[p.L.size():]
 	}
 	return nil
 }
@@ -259,22 +289,24 @@ func (sect *FloorMap) MarshalBinary() ([]byte, error) {
 }
 
 func (sect *FloorMap) UnmarshalBinary(data []byte) error {
+	return sect.Decode(binenc.NewReader(data))
+}
+
+func (sect *FloorMap) Decode(r *binenc.Reader) error {
 	*sect = FloorMap{}
-	if err := sect.Grid.UnmarshalBinary(data); err != nil {
+	if err := sect.Grid.Decode(r); err != nil {
 		return err
 	} else if sect.Grid.Prefix <= 3 {
 		return fmt.Errorf("unsupported floor map: 0x%x", sect.Grid.Prefix)
 	}
-	data = data[18:]
 	for {
 		var p TilePair
-		if err := p.UnmarshalBinary(data); err != nil {
+		if err := p.Decode(r); err != nil {
 			return err
 		}
-		data = data[p.size():]
 		if p.IsZero() {
-			if len(data) > 0 {
-				return fmt.Errorf("trailing floor data: [%d]", len(data))
+			if r.Remaining() > 0 {
+				return fmt.Errorf("trailing floor data: [%d]", r.Remaining())
 			}
 			return nil
 		}

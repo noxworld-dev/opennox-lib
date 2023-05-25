@@ -8,6 +8,8 @@ import (
 	"io"
 
 	"github.com/noxworld-dev/noxcrypt"
+
+	"github.com/noxworld-dev/opennox-lib/binenc"
 )
 
 type Reader struct {
@@ -217,6 +219,7 @@ func (r *Reader) nextSection() (string, error) {
 }
 
 func (r *Reader) ReadSections() error {
+	var buf bytes.Buffer
 	for {
 		sect, err := r.nextSection()
 		if err == io.EOF {
@@ -224,70 +227,75 @@ func (r *Reader) ReadSections() error {
 		} else if err != nil {
 			return err
 		}
-		data, err := io.ReadAll(r.r)
-		if err != nil {
+		buf.Reset()
+		if _, err := io.Copy(&buf, r.r); err != nil {
 			return err
 		}
+		rd := binenc.NewReader(buf.Bytes())
 		switch sect {
+		default:
+			r.m.Unknown = append(r.m.Unknown, RawSection{
+				Name: sect,
+				Data: buf.Bytes(),
+			})
+			continue
 		case "MapInfo":
-			if err := r.m.Info.UnmarshalBinary(data); err != nil {
+			if err := r.m.Info.Decode(rd); err != nil {
 				return err
 			}
 		case "MapIntro":
 			r.m.Intro = new(MapIntro)
-			if err := r.m.Intro.UnmarshalBinary(data); err != nil {
+			if err := r.m.Intro.Decode(rd); err != nil {
 				return err
 			}
 		case "AmbientData":
 			r.m.Ambient = new(AmbientData)
-			if err := r.m.Ambient.UnmarshalBinary(data); err != nil {
+			if err := r.m.Ambient.Decode(rd); err != nil {
 				return err
 			}
 		case "WallMap":
 			r.m.Walls = new(WallMap)
-			if err := r.m.Walls.UnmarshalBinary(data); err != nil {
+			if err := r.m.Walls.Decode(rd); err != nil {
 				return err
 			}
 		case "FloorMap":
 			r.m.Floor = new(FloorMap)
-			if err := r.m.Floor.UnmarshalBinary(data); err != nil {
+			if err := r.m.Floor.Decode(rd); err != nil {
 				return err
 			}
 		case "ScriptObject":
 			r.m.Script = new(Script)
-			if err := r.m.Script.UnmarshalBinary(data); err != nil {
+			if err := r.m.Script.Decode(rd); err != nil {
 				return err
 			}
 		case "ScriptData":
 			r.m.ScriptData = new(ScriptData)
-			if err := r.m.ScriptData.UnmarshalBinary(data); err != nil {
+			if err := r.m.ScriptData.Decode(rd); err != nil {
 				return err
 			}
 		case "SecretWalls":
 			r.m.SecretWalls = new(SecretWalls)
-			if err := r.m.SecretWalls.UnmarshalBinary(data); err != nil {
+			if err := r.m.SecretWalls.Decode(rd); err != nil {
 				return err
 			}
 		case "WindowWalls":
 			r.m.WindowWalls = new(WindowWalls)
-			if err := r.m.WindowWalls.UnmarshalBinary(data); err != nil {
+			if err := r.m.WindowWalls.Decode(rd); err != nil {
 				return err
 			}
 		case "DestructableWalls":
 			r.m.DestructableWalls = new(DestructableWalls)
-			if err := r.m.DestructableWalls.UnmarshalBinary(data); err != nil {
+			if err := r.m.DestructableWalls.Decode(rd); err != nil {
 				return err
 			}
 		case "WayPoints":
 			r.m.Waypoints = new(Waypoints)
-			if err := r.m.Waypoints.UnmarshalBinary(data); err != nil {
+			if err := r.m.Waypoints.Decode(rd); err != nil {
 				return err
 			}
-		default:
-			r.m.Unknown = append(r.m.Unknown, RawSection{
-				Name: sect,
-				Data: data,
-			})
+		}
+		if n := rd.Remaining(); n > 0 {
+			return fmt.Errorf("trailing %s data: [%d]", sect, n)
 		}
 	}
 }

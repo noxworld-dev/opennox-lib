@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"image"
 	"io"
+
+	"github.com/noxworld-dev/opennox-lib/binenc"
 )
 
 func init() {
@@ -34,18 +36,36 @@ func (w *SecretWall) MarshalBinary() ([]byte, error) {
 	return data, nil
 }
 
-func (w *SecretWall) UnmarshalBinary(data []byte) error {
-	if len(data) < 23 {
+func (w *SecretWall) Decode(r *binenc.Reader) error {
+	var ok bool
+	w.Pos, ok = r.ReadPointI32()
+	if !ok {
 		return io.ErrUnexpectedEOF
 	}
-	w.Pos.X = int(binary.LittleEndian.Uint32(data[0:]))
-	w.Pos.Y = int(binary.LittleEndian.Uint32(data[4:]))
-	w.OpenWait = binary.LittleEndian.Uint32(data[8:])
-	w.Flags = data[12]
-	w.State = data[13]
-	w.OpenDelay = data[14]
-	w.LastOpen = binary.LittleEndian.Uint32(data[15:])
-	w.R2 = binary.LittleEndian.Uint32(data[19:])
+	w.OpenWait, ok = r.ReadU32()
+	if !ok {
+		return io.ErrUnexpectedEOF
+	}
+	w.Flags, ok = r.ReadU8()
+	if !ok {
+		return io.ErrUnexpectedEOF
+	}
+	w.State, ok = r.ReadU8()
+	if !ok {
+		return io.ErrUnexpectedEOF
+	}
+	w.OpenDelay, ok = r.ReadU8()
+	if !ok {
+		return io.ErrUnexpectedEOF
+	}
+	w.LastOpen, ok = r.ReadU32()
+	if !ok {
+		return io.ErrUnexpectedEOF
+	}
+	w.R2, ok = r.ReadU32()
+	if !ok {
+		return io.ErrUnexpectedEOF
+	}
 	return nil
 }
 
@@ -72,27 +92,27 @@ func (sect *SecretWalls) MarshalBinary() ([]byte, error) {
 }
 
 func (sect *SecretWalls) UnmarshalBinary(data []byte) error {
+	return sect.Decode(binenc.NewReader(data))
+}
+
+func (sect *SecretWalls) Decode(r *binenc.Reader) error {
 	*sect = SecretWalls{}
-	if len(data) < 2 {
+	vers, ok := r.ReadU16()
+	if !ok {
 		return io.ErrUnexpectedEOF
-	}
-	vers := binary.LittleEndian.Uint16(data)
-	data = data[2:]
-	if vers != 2 {
+	} else if vers != 2 {
 		return fmt.Errorf("unsupported version of secret walls section: %d", vers)
 	}
-	if len(data) < 2 {
+	n, ok := r.ReadU16()
+	if !ok {
 		return io.ErrUnexpectedEOF
 	}
-	n := int(binary.LittleEndian.Uint16(data))
-	data = data[2:]
 	sect.Walls = make([]SecretWall, 0, n)
-	for i := 0; i < n; i++ {
+	for i := 0; i < int(n); i++ {
 		var w SecretWall
-		if err := w.UnmarshalBinary(data); err != nil {
+		if err := w.Decode(r); err != nil {
 			return err
 		}
-		data = data[23:]
 		sect.Walls = append(sect.Walls, w)
 	}
 	return nil

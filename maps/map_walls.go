@@ -3,6 +3,8 @@ package maps
 import (
 	"fmt"
 	"io"
+
+	"github.com/noxworld-dev/opennox-lib/binenc"
 )
 
 func init() {
@@ -42,26 +44,23 @@ func (w *Wall) MarshalBinary() ([]byte, error) {
 	return data, nil
 }
 
-func (w *Wall) UnmarshalBinary(data []byte) error {
+func (w *Wall) Decode(r *binenc.Reader) error {
 	*w = Wall{}
-	if len(data) < 1 {
+	x, ok := r.ReadU8()
+	if !ok {
 		return io.ErrUnexpectedEOF
-	}
-	x := data[0]
-	data = data[1:]
-	if x == 0xff {
+	} else if x == 0xff {
 		return nil
 	}
-	if len(data) < 1 {
+	y, ok := r.ReadU8()
+	if !ok {
 		return io.ErrUnexpectedEOF
-	}
-	y := data[0]
-	data = data[1:]
-	if y == 0xff {
+	} else if x == 0xff {
 		return nil
 	}
 	w.Pos = WallPos{X: x, Y: y}
-	if len(data) < 5 {
+	data, ok := r.ReadNext(5)
+	if !ok {
 		return io.ErrUnexpectedEOF
 	}
 	w.Dir = data[0]
@@ -110,23 +109,24 @@ func (sect *WallMap) MarshalBinary() ([]byte, error) {
 }
 
 func (sect *WallMap) UnmarshalBinary(data []byte) error {
+	return sect.Decode(binenc.NewReader(data))
+}
+
+func (sect *WallMap) Decode(r *binenc.Reader) error {
 	*sect = WallMap{}
-	if err := sect.Grid.UnmarshalBinary(data); err != nil {
+	if err := sect.Grid.Decode(r); err != nil {
 		return err
 	}
-	data = data[18:]
 	for {
 		var w Wall
-		if err := w.UnmarshalBinary(data); err != nil {
+		if err := w.Decode(r); err != nil {
 			return err
 		} else if w.IsZero() {
-			data = data[1:]
-			if len(data) > 0 {
-				return fmt.Errorf("trailing wall data: [%d]", len(data))
+			if r.Remaining() > 0 {
+				return fmt.Errorf("trailing wall data: [%d]", r.Remaining())
 			}
 			return nil
 		}
-		data = data[7:]
 		sect.Walls = append(sect.Walls, w)
 	}
 }

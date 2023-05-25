@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"image"
 	"io"
+
+	"github.com/noxworld-dev/opennox-lib/binenc"
 )
 
 func init() {
@@ -22,12 +24,12 @@ func (w *WindowWall) MarshalBinary() ([]byte, error) {
 	return data, nil
 }
 
-func (w *WindowWall) UnmarshalBinary(data []byte) error {
-	if len(data) < 8 {
+func (w *WindowWall) Decode(r *binenc.Reader) error {
+	var ok bool
+	w.Pos, ok = r.ReadPointI32()
+	if !ok {
 		return io.ErrUnexpectedEOF
 	}
-	w.Pos.X = int(binary.LittleEndian.Uint32(data[0:]))
-	w.Pos.Y = int(binary.LittleEndian.Uint32(data[4:]))
 	return nil
 }
 
@@ -54,27 +56,27 @@ func (sect *WindowWalls) MarshalBinary() ([]byte, error) {
 }
 
 func (sect *WindowWalls) UnmarshalBinary(data []byte) error {
+	return sect.Decode(binenc.NewReader(data))
+}
+
+func (sect *WindowWalls) Decode(r *binenc.Reader) error {
 	*sect = WindowWalls{}
-	if len(data) < 2 {
+	vers, ok := r.ReadU16()
+	if !ok {
 		return io.ErrUnexpectedEOF
-	}
-	vers := binary.LittleEndian.Uint16(data)
-	data = data[2:]
-	if vers != 2 {
+	} else if vers != 2 {
 		return fmt.Errorf("unsupported version of window walls section: %d", vers)
 	}
-	if len(data) < 2 {
+	n, ok := r.ReadU16()
+	if !ok {
 		return io.ErrUnexpectedEOF
 	}
-	n := int(binary.LittleEndian.Uint16(data))
-	data = data[2:]
 	sect.Walls = make([]WindowWall, 0, n)
-	for i := 0; i < n; i++ {
+	for i := 0; i < int(n); i++ {
 		var w WindowWall
-		if err := w.UnmarshalBinary(data); err != nil {
+		if err := w.Decode(r); err != nil {
 			return err
 		}
-		data = data[8:]
 		sect.Walls = append(sect.Walls, w)
 	}
 	return nil

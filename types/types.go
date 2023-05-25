@@ -87,3 +87,9 @@ func (r Rectf) Canon() Rectf {
 func RectFromPointsf(p1, p2 Pointf) Rectf {
 	return Rectf{Min: p1, Max: p2}.Canon()
 }
+
+type RGB struct {
+	R byte `json:"r"`
+	G byte `json:"g"`
+	B byte `json:"b"`
+}

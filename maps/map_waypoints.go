@@ -6,6 +6,7 @@ import (
 	"io"
 	"math"
 
+	"github.com/noxworld-dev/opennox-lib/binenc"
 	"github.com/noxworld-dev/opennox-lib/types"
 )
 
@@ -25,12 +26,16 @@ func (w *WaypointLink) MarshalBinary() ([]byte, error) {
 	return data, nil
 }
 
-func (w *WaypointLink) UnmarshalBinary(data []byte) error {
-	if len(data) < 5 {
+func (w *WaypointLink) Decode(r *binenc.Reader) error {
+	var ok bool
+	w.ID, ok = r.ReadU32()
+	if !ok {
 		return io.ErrUnexpectedEOF
 	}
-	w.ID = binary.LittleEndian.Uint32(data[0:])
-	w.Flags = data[4]
+	w.Flags, ok = r.ReadU8()
+	if !ok {
+		return io.ErrUnexpectedEOF
+	}
 	return nil
 }
 
@@ -71,35 +76,33 @@ func (w *Waypoint) MarshalBinary() ([]byte, error) {
 	return data, nil
 }
 
-func (w *Waypoint) UnmarshalBinary(data []byte) error {
-	if len(data) < 13 {
+func (w *Waypoint) Decode(r *binenc.Reader) error {
+	var ok bool
+	w.ID, ok = r.ReadU32()
+	if !ok {
 		return io.ErrUnexpectedEOF
 	}
-	w.ID = binary.LittleEndian.Uint32(data[0:])
-	data = data[4:]
-	w.Pos.X = math.Float32frombits(binary.LittleEndian.Uint32(data[0:]))
-	w.Pos.Y = math.Float32frombits(binary.LittleEndian.Uint32(data[4:]))
-	data = data[8:]
-	sz := int(data[0])
-	data = data[1:]
-	if len(data) < sz {
+	w.Pos, ok = r.ReadPointF32()
+	if !ok {
 		return io.ErrUnexpectedEOF
 	}
-	w.Name = string(data[:sz])
-	data = data[sz:]
-	if len(data) < 5 {
+	w.Name, ok = r.ReadString8()
+	if !ok {
 		return io.ErrUnexpectedEOF
 	}
-	w.Flags = binary.LittleEndian.Uint32(data[0:])
-	data = data[4:]
-	sz = int(data[0])
-	data = data[1:]
-	for i := 0; i < sz; i++ {
+	w.Flags, ok = r.ReadU32()
+	if !ok {
+		return io.ErrUnexpectedEOF
+	}
+	sz, ok := r.ReadU8()
+	if !ok {
+		return io.ErrUnexpectedEOF
+	}
+	for i := 0; i < int(sz); i++ {
 		var l WaypointLink
-		if err := l.UnmarshalBinary(data); err != nil {
+		if err := l.Decode(r); err != nil {
 			return err
 		}
-		data = data[5:]
 		w.Links = append(w.Links, l)
 	}
 	return nil
@@ -128,28 +131,28 @@ func (sect *Waypoints) MarshalBinary() ([]byte, error) {
 }
 
 func (sect *Waypoints) UnmarshalBinary(data []byte) error {
+	return sect.Decode(binenc.NewReader(data))
+}
+
+func (sect *Waypoints) Decode(r *binenc.Reader) error {
 	*sect = Waypoints{}
-	if len(data) < 2 {
+	vers, ok := r.ReadU16()
+	if !ok {
 		return io.ErrUnexpectedEOF
-	}
-	vers := binary.LittleEndian.Uint16(data)
-	data = data[2:]
-	if vers != 4 {
+	} else if vers != 4 {
 		return fmt.Errorf("unsupported version of waypoints section: %d", vers)
 	}
-	if len(data) < 4 {
+	n, ok := r.ReadU32()
+	if !ok {
 		return io.ErrUnexpectedEOF
 	}
-	n := int(binary.LittleEndian.Uint32(data))
-	data = data[4:]
 	sect.Waypoints = make([]Waypoint, 0, n)
-	for i := 0; i < n; i++ {
+	for i := 0; i < int(n); i++ {
 		var w Waypoint
-		if err := w.UnmarshalBinary(data); err != nil {
+		if err := w.Decode(r); err != nil {
 			return err
 		}
 		sect.Waypoints = append(sect.Waypoints, w)
-		data = data[w.EncodingSize():]
 	}
 	return nil
 }

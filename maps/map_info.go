@@ -5,6 +5,9 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+
+	"github.com/noxworld-dev/opennox-lib/binenc"
+	"github.com/noxworld-dev/opennox-lib/types"
 )
 
 func init() {
@@ -14,7 +17,7 @@ func init() {
 }
 
 type MapInfo struct {
-	Format        int           `json:"format,omitempty"`
+	Format        uint16        `json:"format,omitempty"`
 	Summary       string        `json:"summary,omitempty"`        // 0 [64]
 	Description   string        `json:"description,omitempty"`    // 64 [512]
 	Version       string        `json:"version,omitempty"`        // 576 [16]
@@ -121,12 +124,16 @@ func (info *MapInfo) MarshalBinary() ([]byte, error) {
 }
 
 func (info *MapInfo) UnmarshalBinary(data []byte) error {
+	return info.Decode(binenc.NewReader(data))
+}
+
+func (info *MapInfo) Decode(r *binenc.Reader) error {
 	*info = MapInfo{}
-	if len(data) < 2 {
+	var ok bool
+	info.Format, ok = r.ReadU16()
+	if !ok {
 		return io.ErrUnexpectedEOF
 	}
-	info.Format = int(binary.LittleEndian.Uint16(data))
-	data = data[2:]
 	if info.Format > 3 {
 		return fmt.Errorf("unsupported version: %d", info.Format)
 	}
@@ -149,11 +156,10 @@ func (info *MapInfo) UnmarshalBinary(data []byte) error {
 		{&info.Copyright, &info.Trailing.Copyright, 128},
 		{&info.Date, &info.Trailing.Date, 32},
 	} {
-		if len(data) < f.max {
+		str, ok := r.ReadNext(f.max)
+		if !ok {
 			return io.ErrUnexpectedEOF
 		}
-		str := data[:f.max]
-		data = data[f.max:]
 		if i := bytes.IndexByte(str, 0); i >= 0 {
 			if trail := bytes.TrimRight(str[i+1:], "\x00"); f.tp != nil && len(trail) > 0 {
 				*f.tp = string(trail)
@@ -162,18 +168,19 @@ func (info *MapInfo) UnmarshalBinary(data []byte) error {
 		}
 		*f.p = string(str)
 	}
-	if len(data) < 4 {
+	info.Flags, ok = r.ReadU32()
+	if !ok {
 		return io.ErrUnexpectedEOF
 	}
-	info.Flags = binary.LittleEndian.Uint32(data)
-	data = data[4:]
 	if info.Format == 2 {
-		if len(data) < 2 {
+		info.MinPlayers, ok = r.ReadU8()
+		if !ok {
 			return io.ErrUnexpectedEOF
 		}
-		info.MinPlayers = data[0]
-		info.MaxPlayers = data[1]
-		data = data[2:]
+		info.MaxPlayers, ok = r.ReadU8()
+		if !ok {
+			return io.ErrUnexpectedEOF
+		}
 	} else {
 		info.MinPlayers = 2
 		info.MaxPlayers = 16
@@ -181,28 +188,15 @@ func (info *MapInfo) UnmarshalBinary(data []byte) error {
 	if info.Format < 3 {
 		return nil
 	}
-	if len(data) == 0 {
-		return io.ErrUnexpectedEOF
-	}
 
-	sz := int(data[0])
-	data = data[1:]
-	if len(data) < sz {
+	info.QuestIntro, ok = r.ReadString8()
+	if !ok {
 		return io.ErrUnexpectedEOF
 	}
-	info.QuestIntro = string(data[:sz])
-	data = data[sz:]
-	if len(data) == 0 {
+	info.QuestGraphics, ok = r.ReadString8()
+	if !ok {
 		return io.ErrUnexpectedEOF
 	}
-
-	sz = int(data[0])
-	data = data[1:]
-	if len(data) < sz {
-		return io.ErrUnexpectedEOF
-	}
-	info.QuestGraphics = string(data[:sz])
-	data = data[sz:]
 	return nil
 }
 
@@ -223,33 +217,26 @@ func (sect *MapIntro) MarshalBinary() ([]byte, error) {
 }
 
 func (sect *MapIntro) UnmarshalBinary(data []byte) error {
-	if len(data) < 2 {
+	return sect.Decode(binenc.NewReader(data))
+}
+
+func (sect *MapIntro) Decode(r *binenc.Reader) error {
+	*sect = MapIntro{}
+	vers, ok := r.ReadU16()
+	if !ok {
 		return io.ErrUnexpectedEOF
-	}
-	vers := binary.LittleEndian.Uint16(data)
-	data = data[2:]
-	if vers > 1 {
+	} else if vers > 1 {
 		return fmt.Errorf("unsupported map intro version: %d", vers)
 	}
-	if len(data) < 4 {
+	sect.Data, ok = r.ReadString32()
+	if !ok {
 		return io.ErrUnexpectedEOF
 	}
-	*sect = MapIntro{}
-	size := binary.LittleEndian.Uint32(data)
-	data = data[4:]
-	if size > uint32(len(data)) {
-		return io.ErrUnexpectedEOF
-	}
-	sect.Data = string(data[:size])
 	return nil
 }
 
-type ColorRGB struct {
-	R, G, B byte
-}
-
 type AmbientData struct {
-	AmbientColor ColorRGB
+	AmbientColor types.RGB
 }
 
 func (*AmbientData) MapSection() string {
@@ -266,25 +253,33 @@ func (sect *AmbientData) MarshalBinary() ([]byte, error) {
 }
 
 func (sect *AmbientData) UnmarshalBinary(data []byte) error {
-	if len(data) < 2 {
+	return sect.Decode(binenc.NewReader(data))
+}
+
+func (sect *AmbientData) Decode(r *binenc.Reader) error {
+	vers, ok := r.ReadU16()
+	if !ok {
 		return io.ErrUnexpectedEOF
-	}
-	vers := binary.LittleEndian.Uint16(data)
-	data = data[2:]
-	if vers != 1 {
+	} else if vers != 1 {
 		return fmt.Errorf("unsupported ambient data version: %d", vers)
 	}
-	if len(data) < 12 {
+	cr, ok := r.ReadU32()
+	if !ok {
 		return io.ErrUnexpectedEOF
 	}
-	r := binary.LittleEndian.Uint32(data[0:])
-	g := binary.LittleEndian.Uint32(data[4:])
-	b := binary.LittleEndian.Uint32(data[8:])
-	if r > 0xff || g > 0xff || b > 0xff {
-		return fmt.Errorf("invalid color value in ambient data: (%d,%d,%d)", r, g, b)
+	cg, ok := r.ReadU32()
+	if !ok {
+		return io.ErrUnexpectedEOF
 	}
-	sect.AmbientColor = ColorRGB{
-		R: byte(r), G: byte(g), B: byte(b),
+	cb, ok := r.ReadU32()
+	if !ok {
+		return io.ErrUnexpectedEOF
+	}
+	if cr > 0xff || cg > 0xff || cb > 0xff {
+		return fmt.Errorf("invalid color value in ambient data: (%d,%d,%d)", cr, cg, cb)
+	}
+	sect.AmbientColor = types.RGB{
+		R: byte(cr), G: byte(cg), B: byte(cb),
 	}
 	return nil
 }

@@ -3,8 +3,11 @@ package maps
 import (
 	"encoding"
 	"errors"
+	"fmt"
 	"image"
 	"reflect"
+
+	"github.com/noxworld-dev/opennox-lib/binenc"
 )
 
 var mapSections = make(map[string]reflect.Type)
@@ -33,12 +36,20 @@ func (sect RawSection) Decode() (Section, error) {
 		return nil, errors.New("unsupported section: " + sect.Name)
 	}
 	s := reflect.New(typ).Interface().(Section)
-	err := s.UnmarshalBinary(sect.Data)
-	return s, err
+	rd := binenc.NewReader(sect.Data)
+	err := s.Decode(rd)
+	if err != nil {
+		return s, err
+	}
+	if n := rd.Remaining(); n > 0 {
+		return s, fmt.Errorf("trailing %s data: [%d]", sect.Name, n)
+	}
+	return s, nil
 }
 
 type Section interface {
 	MapSection() string
+	Decode(r *binenc.Reader) error
 	encoding.BinaryMarshaler
 	encoding.BinaryUnmarshaler
 }
