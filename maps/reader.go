@@ -278,6 +278,11 @@ func (r *Reader) ReadSections() error {
 			if err := r.m.DestructableWalls.UnmarshalBinary(data); err != nil {
 				return err
 			}
+		case "WayPoints":
+			r.m.Waypoints = new(Waypoints)
+			if err := r.m.Waypoints.UnmarshalBinary(data); err != nil {
+				return err
+			}
 		default:
 			r.m.Unknown = append(r.m.Unknown, RawSection{
 				Name: sect,

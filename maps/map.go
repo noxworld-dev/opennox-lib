@@ -65,6 +65,7 @@ type Map struct {
 	SecretWalls       *SecretWalls
 	WindowWalls       *WindowWalls
 	DestructableWalls *DestructableWalls
+	Waypoints         *Waypoints
 	Unknown           []RawSection
 }
 
