@@ -61,8 +61,13 @@ func init() {
 		Short: "Decompile binary NoxScript file into human-readable script",
 	}
 	cmd.AddCommand(cmdDecomp)
+	cmdDecompNoFold := cmdDecomp.Flags().Bool("nofold", false, "do not fold the code")
+	cmdDecompNoOpt := cmdDecomp.Flags().Bool("noopt", false, "do not optimize the code")
 	cmdDecomp.RunE = func(cmd *cobra.Command, args []string) error {
-		return cmdNSDecomp(cmd, args)
+		return cmdNSDecomp(cmd, args, &noxast.Config{
+			DoNotOptimize: *cmdDecompNoOpt,
+			DoNotFold:     *cmdDecompNoFold,
+		})
 	}
 }
 
@@ -196,7 +201,7 @@ func cmdNSDisasm(cmd *cobra.Command, args []string) error {
 	return last
 }
 
-func cmdNSDecomp(cmd *cobra.Command, args []string) error {
+func cmdNSDecomp(cmd *cobra.Command, args []string, c *noxast.Config) error {
 	if len(args) != 1 {
 		return errors.New("expected one argument")
 	}
@@ -226,6 +231,6 @@ func cmdNSDecomp(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	astf := noxast.Translate(scr)
+	astf := noxast.Translate(scr, c)
 	return format.Node(os.Stdout, token.NewFileSet(), astf)
 }
