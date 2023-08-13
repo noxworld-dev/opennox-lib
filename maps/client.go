@@ -66,6 +66,11 @@ func (c *Client) checkAPI(ctx context.Context) error {
 	if resp.StatusCode != http.StatusOK {
 		return ErrAPIUnsupported
 	}
+	if typ := resp.Header.Get("Content-Type"); typ != "" {
+		if strings.HasPrefix(typ, "text/") {
+			return ErrAPIUnsupported
+		}
+	}
 	return nil
 }
 
@@ -122,7 +127,7 @@ func (c *Client) DownloadMap(ctx context.Context, dest string, name string) erro
 		return fmt.Errorf("cannot create dest dir: %w", err)
 	}
 	r := limitReader(resp.Body, mapFileSizeLimit)
-	switch resp.Header.Get("Content-Type") {
+	switch typ := resp.Header.Get("Content-Type"); typ {
 	case contentTypeZIP:
 		// maps compressed with ZIP
 		tmp, err := os.CreateTemp("", "nox_map_*.zip")
@@ -181,6 +186,9 @@ func (c *Client) DownloadMap(ctx context.Context, dest string, name string) erro
 		}
 		return nil
 	default:
+		if strings.HasPrefix(typ, "text/") {
+			return ErrAPIUnsupported
+		}
 		// regular map files served directly
 		f, err := ifs.Create(filepath.Join(dest, name+Ext))
 		if err != nil {
