@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"image"
 	"io"
+	"strings"
 )
 
 const magic = "FoNt"
@@ -92,9 +94,12 @@ func Decode(r io.Reader) (*Font, error) {
 	}
 	// This is an ugly workaround for Russian Nox fonts.
 	// That localization uses CP-1251 characters instead of UTF-16 as all other languages.
+	// So we check for a shape of a one unique Russian letter to know for sure.
+	// Unfortunately, this check is not automatic. Each similar RU font needs to be added manually here.
 	if len(f.Ranges) == 1 {
 		if g := f.Char16(0xFB); g != nil {
-			if bytes.Equal(g.Pix, fontRusYeruSmall[:]) || bytes.Equal(g.Pix, fontRusYeruLarge[:]) {
+			if bytes.Equal(g.Pix, fontRusYeruSmall[:]) || bytes.Equal(g.Pix, fontRusYeruLarge[:]) ||
+				bytes.Equal(g.Pix, fontRusYeruSmall2[:]) || bytes.Equal(g.Pix, fontRusYeruLarge2[:]) {
 				f.CP1251 = true
 			}
 		}
@@ -102,10 +107,32 @@ func Decode(r io.Reader) (*Font, error) {
 	return &f, nil
 }
 
+// printCompactArray can be used to generate font test entries below.
+func printCompactArray(p []byte) string {
+	var buf strings.Builder
+	fmt.Fprintf(&buf, "[%d]byte{", len(p))
+	first := true
+	for i, b := range p {
+		if b == 0 {
+			continue
+		}
+		if !first {
+			buf.WriteString(", ")
+		} else {
+			first = false
+		}
+		fmt.Fprintf(&buf, "%d: 0x%02x", i, b)
+	}
+	buf.WriteString("}")
+	return buf.String()
+}
+
 var (
 	// Tests for one unique Russian letter: "ы" (0xFB in CP-1251).
-	fontRusYeruSmall = [18]byte{4: 0x88, 6: 0x88, 8: 0xc8, 10: 0xa8, 12: 0xc8}
-	fontRusYeruLarge = [45]byte{15: 0xc1, 16: 0x80, 18: 0xc1, 19: 0x80, 21: 0xf9, 22: 0x80, 24: 0xcd, 25: 0x80, 27: 0xcd, 28: 0x80, 30: 0xf9, 31: 0x80}
+	fontRusYeruSmall  = [18]byte{4: 0x88, 6: 0x88, 8: 0xc8, 10: 0xa8, 12: 0xc8}
+	fontRusYeruSmall2 = [10]byte{3: 0x88, 4: 0x88, 5: 0xc8, 6: 0xa8, 7: 0xe8}
+	fontRusYeruLarge  = [45]byte{15: 0xc1, 16: 0x80, 18: 0xc1, 19: 0x80, 21: 0xf9, 22: 0x80, 24: 0xcd, 25: 0x80, 27: 0xcd, 28: 0x80, 30: 0xf9, 31: 0x80}
+	fontRusYeruLarge2 = [48]byte{18: 0xc1, 19: 0x80, 21: 0xc1, 22: 0x80, 24: 0xc1, 25: 0x80, 27: 0xf9, 28: 0x80, 30: 0xcd, 31: 0x80, 33: 0xcd, 34: 0x80, 36: 0xf9, 37: 0x80}
 )
 
 func (f *Font) Encode() ([]byte, error) {
