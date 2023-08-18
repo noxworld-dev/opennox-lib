@@ -11,7 +11,7 @@ require (
 	github.com/noxworld-dev/noxcrypt v0.0.0-20230523082423-f4e477d45f03
 	github.com/noxworld-dev/noxscript/eud/v171 v171.3.1
 	github.com/noxworld-dev/noxscript/ns v1.0.2
-	github.com/noxworld-dev/noxscript/ns/v3 v3.2.0
+	github.com/noxworld-dev/noxscript/ns/v3 v3.3.0
 	github.com/noxworld-dev/noxscript/ns/v4 v4.9.0
 	github.com/spf13/cobra v1.7.0
 	github.com/stretchr/testify v1.8.4

@@ -21,8 +21,8 @@ github.com/noxworld-dev/noxscript/eud/v171 v171.3.1 h1:KRugWrwLY54qiRucyJn3iqvWr
 github.com/noxworld-dev/noxscript/eud/v171 v171.3.1/go.mod h1:Aigh/4MqsXvkPY/2JXXaNZghGK8mScpsip3Kdz6EUxE=
 github.com/noxworld-dev/noxscript/ns v1.0.2 h1:PMpKqRi3fEhwAfBM+PZVTopT6o2vL6AmCDQH8zV5QWU=
 github.com/noxworld-dev/noxscript/ns v1.0.2/go.mod h1:DobGfGPUycvh7D6hB5mW5gbL1QiRsw7QQiVPJz4wYZ0=
-github.com/noxworld-dev/noxscript/ns/v3 v3.2.0 h1:QWVKQzePlOmEBsFhBFIbzHcKuIdjTyHH76CZsuP//do=
-github.com/noxworld-dev/noxscript/ns/v3 v3.2.0/go.mod h1:YhSYNQ9BppuBMgL5L7h5744IPG2HKVI8HwZnzgwYlRE=
+github.com/noxworld-dev/noxscript/ns/v3 v3.3.0 h1:EC5DA6ZnRLuNbd85TbMSTvnFlZXsNSsPZJsqBhmXfbg=
+github.com/noxworld-dev/noxscript/ns/v3 v3.3.0/go.mod h1:YhSYNQ9BppuBMgL5L7h5744IPG2HKVI8HwZnzgwYlRE=
 github.com/noxworld-dev/noxscript/ns/v4 v4.9.0 h1:SXy4atXtnCtUVyNFKyHHC4Qkl2zOyhBH3Emf/KN1CcM=
 github.com/noxworld-dev/noxscript/ns/v4 v4.9.0/go.mod h1:jbdzICFf72mZjokCQGe8w5EjIn19Uf3DXxJYSyM/md4=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
