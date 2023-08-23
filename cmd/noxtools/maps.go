@@ -45,22 +45,37 @@ func mapWriteRawSections(fname string, hdr *maps.Header, raw []maps.RawSection) 
 }
 
 func mapRemoveSections(fname string, sections []string, verbose bool) error {
+	return mapUpdateSections(fname, func(s *maps.RawSection) (bool, error) {
+		if !slices.Contains(sections, s.Name) {
+			return false, nil
+		}
+		*s = maps.RawSection{}
+		return true, nil
+	}, verbose)
+}
+
+func mapUpdateSections(fname string, fnc func(s *maps.RawSection) (bool, error), verbose bool) error {
 	raw, hdr, err := mapReadRawSections(fname)
 	if err != nil {
 		return err
 	}
-	removed := 0
+	changed := 0
 	out := make([]maps.RawSection, 0, len(raw))
 	for _, s := range raw {
-		if slices.Contains(sections, s.Name) {
-			removed++
-		} else {
+		upd, err := fnc(&s)
+		if err != nil {
+			return err
+		}
+		if upd {
+			changed++
+		}
+		if !upd || s.Name != "" {
 			out = append(out, s)
 		}
 	}
-	if removed == 0 {
+	if changed == 0 {
 		if verbose {
-			fmt.Println("no sections to remove")
+			fmt.Println("no sections updated")
 		}
 		return nil
 	}

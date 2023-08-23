@@ -156,13 +156,29 @@ func cmdNSRemove(cmd *cobra.Command, args []string) error {
 	if len(args) == 0 {
 		return errors.New("at least one map file expected")
 	}
-	toRemove := []string{
-		(&maps.Script{}).MapSection(),
-		(&maps.ScriptData{}).MapSection(),
-	}
+	sname := (&maps.Script{}).MapSection()
+	sdname := (&maps.ScriptData{}).MapSection()
 	var last error
 	for _, fname := range args {
-		if err := mapRemoveSections(fname, toRemove, true); err != nil {
+		if err := mapUpdateSections(fname, func(s *maps.RawSection) (bool, error) {
+			switch s.Name {
+			case sname:
+				*s = maps.RawSection{} // remove
+				return true, nil
+			case sdname:
+				if len(s.Data) == 0 {
+					return false, nil
+				}
+				data, err := (&maps.ScriptData{}).MarshalBinary()
+				if err != nil {
+					return false, err
+				}
+				s.Data = data
+				return true, nil
+			default:
+				return false, nil
+			}
+		}, true); err != nil {
 			last = err
 			if len(args) > 1 {
 				log.Println(err)
