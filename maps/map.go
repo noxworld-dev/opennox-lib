@@ -5,7 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"image"
+	"math"
 	"reflect"
+
+	"golang.org/x/exp/slices"
 
 	"github.com/noxworld-dev/opennox-lib/binenc"
 )
@@ -57,6 +60,61 @@ type Section interface {
 	Decode(r *binenc.Reader) error
 	encoding.BinaryMarshaler
 	encoding.BinaryUnmarshaler
+}
+
+var sectionOrder = []string{
+	"MapInfo",
+	"WallMap",
+	"FloorMap",
+	"SecretWalls",
+	"DestructableWalls",
+	"WayPoints",
+	"DebugData",
+	"WindowWalls",
+	"GroupData",
+	"ScriptObject",
+	"AmbientData",
+	"Polygons",
+	"MapIntro",
+	"ScriptData",
+	"ObjectTOC",
+	"ObjectData",
+}
+
+// SectionOrder returns an order in which the section should be written.
+// It returns math.MaxInt for unknown sections, so they sort last.
+func SectionOrder(name string) int {
+	i := slices.Index(sectionOrder, name)
+	if i < 0 {
+		return math.MaxInt
+	}
+	return i
+}
+
+// SortSections sorts a slice of sections according to SectionOrder.
+func SortSections(arr []Section) {
+	slices.SortFunc(arr, func(a, b Section) int {
+		i, j := SectionOrder(a.MapSection()), SectionOrder(b.MapSection())
+		if i < j {
+			return -1
+		} else if i > j {
+			return -1
+		}
+		return 0
+	})
+}
+
+// SortRawSections sorts a slice of sections according to SectionOrder.
+func SortRawSections(arr []RawSection) {
+	slices.SortFunc(arr, func(a, b RawSection) int {
+		i, j := SectionOrder(a.Name), SectionOrder(b.Name)
+		if i < j {
+			return -1
+		} else if i > j {
+			return -1
+		}
+		return 0
+	})
 }
 
 type Info struct {
