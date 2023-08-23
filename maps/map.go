@@ -98,7 +98,7 @@ func SortSections(arr []Section) {
 		if i < j {
 			return -1
 		} else if i > j {
-			return -1
+			return +1
 		}
 		return 0
 	})
@@ -111,7 +111,7 @@ func SortRawSections(arr []RawSection) {
 		if i < j {
 			return -1
 		} else if i > j {
-			return -1
+			return +1
 		}
 		return 0
 	})
