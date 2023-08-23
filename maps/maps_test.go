@@ -2,11 +2,13 @@ package maps_test
 
 import (
 	"bytes"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	crypt "github.com/noxworld-dev/noxcrypt"
 	"github.com/stretchr/testify/require"
 
 	"github.com/noxworld-dev/noxscript/ns/asm"
@@ -196,4 +198,77 @@ func TestMapSections(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestMapWrite(t *testing.T) {
+	path := noxtest.DataPath(t, maps.Dir)
+	list, err := os.ReadDir(path)
+	require.NoError(t, err)
+	for _, fi := range list {
+		if !fi.IsDir() {
+			continue
+		}
+		fname := filepath.Join(path, fi.Name(), fi.Name()+".map")
+		if _, err := ifs.Stat(fname); os.IsNotExist(err) {
+			continue
+		}
+		t.Run(strings.ToLower(fi.Name()), func(t *testing.T) {
+			f, err := ifs.Open(fname)
+			require.NoError(t, err)
+			defer f.Close()
+
+			var exp bytes.Buffer
+
+			rd, err := maps.NewReader(io.TeeReader(f, &exp))
+			require.NoError(t, err)
+			sect, err := rd.ReadSectionsRaw()
+			require.NoError(t, err)
+			t.Logf("map crc: 0x%x", rd.Map().CRC())
+
+			var got buffer
+			wr, err := maps.NewWriter(&got, rd.Header())
+			require.NoError(t, err)
+			err = wr.WriteRawSections(sect)
+			require.NoError(t, err)
+			err = wr.Close()
+			require.NoError(t, err)
+			if bexp, bgot := exp.Bytes(), got.Bytes(); !bytes.Equal(bexp, bgot) {
+				require.Equal(t, decodeMapBytes(bexp), decodeMapBytes(bgot))
+				require.Equal(t, bexp, bgot)
+			}
+		})
+	}
+}
+
+func decodeMapBytes(data []byte) []byte {
+	cr, err := crypt.NewReader(bytes.NewReader(data), crypt.MapKey)
+	if err != nil {
+		panic(err)
+	}
+	raw, err := io.ReadAll(cr)
+	if err != nil {
+		panic(err)
+	}
+	return raw
+}
+
+type buffer struct {
+	data []byte
+}
+
+func (b *buffer) Bytes() []byte {
+	return b.data
+}
+
+func (b *buffer) Write(p []byte) (int, error) {
+	b.data = append(b.data, p...)
+	return len(p), nil
+}
+
+func (b *buffer) WriteAt(p []byte, off int64) (int, error) {
+	n := copy(b.data[off:], p)
+	if n != len(p) {
+		return n, io.ErrShortWrite
+	}
+	return n, nil
 }

@@ -13,13 +13,11 @@ import (
 )
 
 type Reader struct {
-	cr       *crypt.Reader
-	r        io.Reader
-	err      error
-	limited  bool
-	wallOffX uint32
-	wallOffY uint32
-	m        *Map
+	cr      *crypt.Reader
+	r       io.Reader
+	err     error
+	limited bool
+	m       *Map
 }
 
 func NewReader(r io.Reader) (*Reader, error) {
@@ -32,6 +30,10 @@ func NewReader(r io.Reader) (*Reader, error) {
 		return nil, err
 	}
 	return rd, nil
+}
+
+func (r *Reader) Header() Header {
+	return r.m.Header()
 }
 
 func (r *Reader) Map() *Map {
@@ -156,23 +158,23 @@ func (r *Reader) readAlignedString8() string {
 
 func (r *Reader) readHeader() error {
 	r.m = &Map{}
-	magic := r.readU32()
+	r.m.magic = r.readU32()
 	if err := r.error(); err != nil {
 		return fmt.Errorf("cannot read magic: %w", err)
 	}
-	switch magic {
-	case 0xFADEBEEF:
+	switch r.m.magic {
+	case MagicOld:
 		// nop
-	case 0xFADEFACE:
+	case Magic:
 		r.m.crc = r.readAlignedU32()
 		if err := r.error(); err != nil {
 			return fmt.Errorf("cannot read crc: %w", err)
 		}
 	default:
-		return fmt.Errorf("unsupported magic: 0x%x", magic)
+		return fmt.Errorf("unsupported magic: 0x%x", r.m.magic)
 	}
-	r.wallOffX = r.readU32()
-	r.wallOffY = r.readU32()
+	r.m.wallOffX = r.readU32()
+	r.m.wallOffY = r.readU32()
 	if err := r.error(); err != nil {
 		return fmt.Errorf("cannot read wall offset: %w", err)
 	}

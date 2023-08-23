@@ -10,6 +10,11 @@ import (
 	"github.com/noxworld-dev/opennox-lib/binenc"
 )
 
+const (
+	Magic    = 0xFADEFACE
+	MagicOld = 0xFADEBEEF
+)
+
 var mapSections = make(map[string]reflect.Type)
 
 func RegisterSection(sect Section) {
@@ -63,6 +68,7 @@ type Info struct {
 type Map struct {
 	Info
 
+	magic    uint32
 	crc      uint32
 	wallOffX uint32
 	wallOffY uint32
@@ -78,6 +84,20 @@ type Map struct {
 	DestructableWalls *DestructableWalls
 	Waypoints         *Waypoints
 	Unknown           []RawSection
+}
+
+func (m *Map) Header() Header {
+	return Header{
+		Magic: m.magic,
+		Offs: image.Point{
+			X: int(m.wallOffX),
+			Y: int(m.wallOffY),
+		},
+	}
+}
+
+func (m *Map) CRC() uint32 {
+	return m.crc
 }
 
 // GridBoundingBox returns a bounding box for all walls and tiles on the map.
