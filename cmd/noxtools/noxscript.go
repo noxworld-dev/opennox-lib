@@ -37,19 +37,27 @@ func init() {
 		return cmdNSExtract(cmd, args)
 	}
 
-	// TODO: noxscript insert command
-	//cmdIns := &cobra.Command{
-	//	Use:   "insert input.map input.obj",
-	//	Short: "Insert or replace binary NoxScript file in a map",
-	//}
-	//cmd.AddCommand(cmdIns)
-	//cmdIns.RunE = func(cmd *cobra.Command, args []string) error {
-	//	return cmdNSInsert(cmd, args)
-	//}
+	cmdRemove := &cobra.Command{
+		Use:   "remove input.map",
+		Short: "Removes NoxScript from a map file",
+	}
+	cmd.AddCommand(cmdRemove)
+	cmdRemove.RunE = func(cmd *cobra.Command, args []string) error {
+		return cmdNSRemove(cmd, args)
+	}
+
+	cmdIns := &cobra.Command{
+		Use:   "insert input.map input.obj",
+		Short: "Insert or replace binary NoxScript file in a map",
+	}
+	cmd.AddCommand(cmdIns)
+	cmdIns.RunE = func(cmd *cobra.Command, args []string) error {
+		return cmdNSInsert(cmd, args)
+	}
 
 	cmdDis := &cobra.Command{
 		Use:   "disasm input.obj",
-		Short: "Disassemble binary NoxScript file into text assembly",
+		Short: "Disassemble binary NoxScript file or map script into text assembly",
 	}
 	cmd.AddCommand(cmdDis)
 	cmdDis.RunE = func(cmd *cobra.Command, args []string) error {
@@ -58,7 +66,7 @@ func init() {
 
 	cmdDecomp := &cobra.Command{
 		Use:   "decomp input.obj",
-		Short: "Decompile binary NoxScript file into human-readable script",
+		Short: "Decompile binary NoxScript file or map script into human-readable script",
 	}
 	cmd.AddCommand(cmdDecomp)
 	cmdDecompNoFold := cmdDecomp.Flags().Bool("nofold", false, "do not fold the code")
@@ -142,6 +150,62 @@ func cmdNSExtract(cmd *cobra.Command, args []string) error {
 		}
 		return last
 	}
+}
+
+func cmdNSRemove(cmd *cobra.Command, args []string) error {
+	if len(args) == 0 {
+		return errors.New("at least one map file expected")
+	}
+	toRemove := []string{
+		(&maps.Script{}).MapSection(),
+		(&maps.ScriptData{}).MapSection(),
+	}
+	var last error
+	for _, fname := range args {
+		if err := mapRemoveSections(fname, toRemove, true); err != nil {
+			last = err
+			if len(args) > 1 {
+				log.Println(err)
+			}
+		}
+	}
+	return last
+}
+
+func cmdNSInsert(cmd *cobra.Command, args []string) error {
+	if len(args) != 2 {
+		return errors.New("expected map file and a binary script file")
+	}
+	fmap, fscr := args[0], args[1]
+	raw, hdr, err := mapReadRawSections(fmap)
+	if err != nil {
+		return err
+	}
+	sobj, err := os.ReadFile(fscr)
+	if err != nil {
+		return err
+	}
+	scr := &maps.Script{Data: sobj}
+	sdata, err := scr.MarshalBinary()
+	if err != nil {
+		return err
+	}
+	found := false
+	for i, s := range raw {
+		if s.Name == scr.MapSection() {
+			raw[i].Data = sdata
+			found = true
+			break
+		}
+	}
+	if !found {
+		raw = append(raw, maps.RawSection{
+			Name: scr.MapSection(),
+			Data: sdata,
+		})
+		maps.SortRawSections(raw)
+	}
+	return mapWriteRawSections(fmap, hdr, raw)
 }
 
 func cmdNSDisasm(cmd *cobra.Command, args []string) error {
