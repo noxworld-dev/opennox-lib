@@ -367,6 +367,13 @@ var opLen = map[Op]int{
 }
 
 var opNames = map[Op]string{
+	12: "MSG_SERVER_DISCOVER", // 0x0C
+	13: "MSG_SERVER_INFO",     // 0x0D
+	14: "MSG_SERVER_JOIN",     // 0x0E
+	19: "MSG_SERVER_ERROR",    // 0x13
+	20: "MSG_SERVER_JOIN_OK",  // 0x14
+	31: "MSG_ACCEPTED",        // 0x1F
+
 	33: "MSG_XXX_STOP",
 
 	39:  "MSG_TIMESTAMP",                      // 0x27

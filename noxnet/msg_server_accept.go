@@ -1,0 +1,97 @@
+package noxnet
+
+import (
+	"encoding/binary"
+	"io"
+)
+
+func init() {
+	RegisterServerMessage(&MsgServerAccept{})
+	RegisterClientMessage(&MsgClientAccept{})
+}
+
+type MsgServerAccept struct {
+	Unk0   [2]byte
+	ID     uint32
+	XorKey byte
+}
+
+func (*MsgServerAccept) NetOp() Op {
+	return MSG_ACCEPTED
+}
+
+func (p *MsgServerAccept) EncodeSize() int {
+	return 7
+}
+
+func (p *MsgServerAccept) Encode(data []byte) (int, error) {
+	if len(data) < 7 {
+		return 0, io.ErrShortBuffer
+	}
+	copy(data[0:2], p.Unk0[:])
+	binary.LittleEndian.PutUint32(data[2:6], p.ID)
+	data[6] = p.XorKey
+	return 7, nil
+}
+
+func (p *MsgServerAccept) Decode(data []byte) (int, error) {
+	if len(data) < 7 {
+		return 0, io.ErrUnexpectedEOF
+	}
+	copy(p.Unk0[:], data[0:2])
+	p.ID = binary.LittleEndian.Uint32(data[2:6])
+	p.XorKey = data[6]
+	return 7, nil
+}
+
+type MsgClientAccept struct {
+	Unk0         [2]byte // 0-1
+	PlayerName   string  // 2-67
+	PlayerClass  byte    // 68
+	IsFemale     byte    // 69
+	Unk70        [29]byte
+	ScreenWidth  uint32 // 99-102
+	ScreenHeight uint32 // 103-106
+	Serial       string // 107-128
+	Unk129       [26]byte
+}
+
+func (*MsgClientAccept) NetOp() Op {
+	return MSG_ACCEPTED
+}
+
+func (p *MsgClientAccept) EncodeSize() int {
+	return 155
+}
+
+func (p *MsgClientAccept) Encode(data []byte) (int, error) {
+	if len(data) < 155 {
+		return 0, io.ErrShortBuffer
+	}
+	copy(data[0:2], p.Unk0[:])
+	cStringSet16(data[2:68], p.PlayerName)
+	data[68] = p.PlayerClass
+	data[69] = p.IsFemale
+	copy(data[70:99], p.Unk70[:])
+	binary.LittleEndian.PutUint32(data[99:103], p.ScreenWidth)
+	binary.LittleEndian.PutUint32(data[103:107], p.ScreenHeight)
+	cStringSet(data[107:129], p.Serial)
+	copy(data[129:155], p.Unk129[:])
+	return 7, nil
+}
+
+func (p *MsgClientAccept) Decode(data []byte) (int, error) {
+	if len(data) < 155 {
+		return 0, io.ErrUnexpectedEOF
+	}
+	copy(p.Unk0[:], data[0:2])
+	p.PlayerName = cString16(data[2:68])
+	p.PlayerClass = data[68]
+	p.IsFemale = data[69]
+	copy(p.Unk70[:], data[70:99])
+	p.ScreenWidth = binary.LittleEndian.Uint32(data[99:103])
+	p.ScreenHeight = binary.LittleEndian.Uint32(data[103:107])
+	p.Serial = cString(data[107:129])
+	copy(p.Unk129[:], data[129:155])
+	return 155, nil
+}
