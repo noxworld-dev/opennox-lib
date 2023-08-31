@@ -8,7 +8,7 @@ require (
 	github.com/go-gl/mathgl v1.0.0
 	github.com/icza/bitio v1.1.0
 	github.com/julienschmidt/httprouter v1.3.0
-	github.com/noxworld-dev/noxcrypt v0.0.0-20230823083225-53733cc7c111
+	github.com/noxworld-dev/noxcrypt v0.0.0-20230831140413-02623e75408e
 	github.com/noxworld-dev/noxscript/eud/v171 v171.3.1
 	github.com/noxworld-dev/noxscript/ns v1.0.2
 	github.com/noxworld-dev/noxscript/ns/v3 v3.3.0
