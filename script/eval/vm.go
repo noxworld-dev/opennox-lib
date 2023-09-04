@@ -18,6 +18,7 @@ import (
 	"github.com/noxworld-dev/opennox-lib/log"
 	"github.com/noxworld-dev/opennox-lib/script"
 	"github.com/noxworld-dev/opennox-lib/script/eval/imports"
+	"github.com/noxworld-dev/opennox-lib/script/eval/stdlib"
 )
 
 var (
@@ -132,6 +133,7 @@ func importPathFor(v any) string {
 func (vm *VM) initPackages(g script.Game) {
 	ctx := context.Background()
 
+	vm.vm.Use(stdlib.Symbols)
 	vm.vm.Use(imports.Symbols)
 	vm.vm.Use(nseval3.Symbols)
 	vm.vm.Use(nseval4.Symbols)
