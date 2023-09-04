@@ -3,8 +3,9 @@
 package imports
 
 import (
-	"github.com/noxworld-dev/opennox-lib/object"
 	"reflect"
+
+	"github.com/noxworld-dev/opennox-lib/object"
 )
 
 func init() {

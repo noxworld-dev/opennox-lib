@@ -9,12 +9,14 @@ func Ptf(x, y float32) Pointf {
 	return Pointf{X: x, Y: y}
 }
 
-func Point2f(p image.Point) Pointf {
+func Point2f(p Point) Pointf {
 	return Pointf{
 		X: float32(p.X),
 		Y: float32(p.Y),
 	}
 }
+
+type Point = image.Point
 
 type Pointf struct {
 	X float32 `json:"x"`
@@ -25,8 +27,8 @@ func (p Pointf) Pos() Pointf {
 	return p
 }
 
-func (p Pointf) Point() image.Point {
-	return image.Point{
+func (p Pointf) Point() Point {
+	return Point{
 		X: int(p.X),
 		Y: int(p.Y),
 	}

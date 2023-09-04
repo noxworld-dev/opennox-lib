@@ -16,7 +16,9 @@ func init() {
 		"RectFromPointsf": reflect.ValueOf(types.RectFromPointsf),
 
 		// type definitions
+		"Point":  reflect.ValueOf((*types.Point)(nil)),
 		"Pointf": reflect.ValueOf((*types.Pointf)(nil)),
+		"RGB":    reflect.ValueOf((*types.RGB)(nil)),
 		"Rectf":  reflect.ValueOf((*types.Rectf)(nil)),
 	}
 }
