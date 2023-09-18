@@ -120,3 +120,57 @@ func (sect *ScriptData) Decode(r *binenc.Reader) error {
 	sect.Data = r.ReadAllBytes()
 	return nil
 }
+
+type ScriptHandler struct {
+	Ind  int16
+	Func string
+	Val3 uint32
+}
+
+func (w *ScriptHandler) EncodingSize() int {
+	if w.Ind > 1 {
+		return 2
+	}
+	return 6 + len(w.Func) + 4
+}
+
+func (w *ScriptHandler) MarshalBinary() ([]byte, error) {
+	data := make([]byte, w.EncodingSize())
+	if w.Ind > 1 {
+		binary.LittleEndian.PutUint16(data[0:], uint16(w.Ind))
+		return data, nil
+	}
+	i := 0
+	binary.LittleEndian.PutUint16(data[i:], uint16(w.Ind))
+	i += 2
+	binary.LittleEndian.PutUint32(data[i:], uint32(len(w.Func)))
+	i += 4
+	i += copy(data[i:], w.Func)
+	binary.LittleEndian.PutUint32(data[i:], w.Val3)
+	i += 4
+	return data, nil
+}
+
+func (w *ScriptHandler) Decode(r *binenc.Reader) error {
+	*w = ScriptHandler{}
+	var ok bool
+	w.Ind, ok = r.ReadI16()
+	if !ok {
+		return io.ErrUnexpectedEOF
+	}
+	if w.Ind <= 1 {
+		w.Func, ok = r.ReadString32()
+		if !ok {
+			return io.ErrUnexpectedEOF
+		}
+		w.Val3, ok = r.ReadU32()
+		if !ok {
+			return io.ErrUnexpectedEOF
+		}
+	}
+	return nil
+}
+
+func (w *ScriptHandler) UnmarshalBinary(data []byte) error {
+	return w.Decode(binenc.NewReader(data))
+}
