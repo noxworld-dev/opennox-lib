@@ -113,6 +113,24 @@ func (r *Reader) ReadI32() (int32, bool) {
 	return int32(v), true
 }
 
+func (r *Reader) ReadU64() (uint64, bool) {
+	if r.off+8 > len(r.data) {
+		return 0, false
+	}
+	v := binary.LittleEndian.Uint64(r.data[r.off:])
+	r.off += 8
+	return v, true
+}
+
+func (r *Reader) ReadI64() (int64, bool) {
+	if r.off+8 > len(r.data) {
+		return 0, false
+	}
+	v := binary.LittleEndian.Uint64(r.data[r.off:])
+	r.off += 8
+	return int64(v), true
+}
+
 func (r *Reader) ReadF32() (float32, bool) {
 	if r.off+4 > len(r.data) {
 		return 0, false
@@ -142,6 +160,11 @@ func (r *Reader) ReadPointF32() (types.Pointf, bool) {
 	v.Y = math.Float32frombits(binary.LittleEndian.Uint32(r.data[r.off+4:]))
 	r.off += 8
 	return v, true
+}
+
+func (r *Reader) Align(off int) bool {
+	_, ok := r.ReadNext(8 - (r.off+off)%8)
+	return ok
 }
 
 func (r *Reader) ReadAllBytes() []byte {
