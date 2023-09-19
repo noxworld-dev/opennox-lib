@@ -1,9 +1,12 @@
 package maps
 
 import (
+	"bytes"
 	"encoding/binary"
 	"fmt"
 	"io"
+
+	"github.com/noxworld-dev/noxscript/ns/asm"
 
 	"github.com/noxworld-dev/opennox-lib/binenc"
 )
@@ -79,6 +82,13 @@ func (sect *Script) Decode(r *binenc.Reader) error {
 		return io.ErrUnexpectedEOF
 	}
 	return nil
+}
+
+func (sect *Script) ReadScript() (*asm.Script, error) {
+	if len(sect.Data) == 0 {
+		return nil, nil
+	}
+	return asm.ReadScript(bytes.NewReader(sect.Data))
 }
 
 type ScriptData struct {
