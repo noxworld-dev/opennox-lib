@@ -116,5 +116,9 @@ func DecodePacket(data []byte, p Message) (int, error) {
 	if got, exp := Op(data[0]), p.NetOp(); got != exp {
 		return 0, fmt.Errorf("expected packet: %v, got: %v", exp, got)
 	}
-	return p.Decode(data[1:])
+	n, err := p.Decode(data[1:])
+	if err != nil {
+		return 0, err
+	}
+	return 1 + n, nil
 }

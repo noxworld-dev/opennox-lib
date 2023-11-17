@@ -130,6 +130,9 @@ func TestDecodePacket(t *testing.T) {
 			buf, err := AppendPacket(nil, p)
 			require.NoError(t, err)
 			require.Equal(t, data, buf)
+			n, err = DecodePacket(data, p)
+			require.NoError(t, err)
+			require.Equal(t, int(len(data)), int(n))
 		})
 	}
 }
