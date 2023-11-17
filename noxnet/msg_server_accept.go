@@ -45,10 +45,11 @@ func (p *MsgServerAccept) Decode(data []byte) (int, error) {
 }
 
 type MsgClientAccept struct {
-	Unk0         [2]byte // 0-1
-	PlayerName   string  // 2-67
-	PlayerClass  byte    // 68
-	IsFemale     byte    // 69
+	Unk0         byte   // 0
+	Unk1         byte   // 0
+	PlayerName   string // 2-67
+	PlayerClass  byte   // 68
+	IsFemale     byte   // 69
 	Unk70        [29]byte
 	ScreenWidth  uint32 // 99-102
 	ScreenHeight uint32 // 103-106
@@ -68,7 +69,8 @@ func (p *MsgClientAccept) Encode(data []byte) (int, error) {
 	if len(data) < 155 {
 		return 0, io.ErrShortBuffer
 	}
-	copy(data[0:2], p.Unk0[:])
+	data[0] = p.Unk0
+	data[1] = p.Unk1
 	cStringSet16(data[2:68], p.PlayerName)
 	data[68] = p.PlayerClass
 	data[69] = p.IsFemale
@@ -77,14 +79,15 @@ func (p *MsgClientAccept) Encode(data []byte) (int, error) {
 	binary.LittleEndian.PutUint32(data[103:107], p.ScreenHeight)
 	cStringSet(data[107:129], p.Serial)
 	copy(data[129:155], p.Unk129[:])
-	return 7, nil
+	return 155, nil
 }
 
 func (p *MsgClientAccept) Decode(data []byte) (int, error) {
 	if len(data) < 155 {
 		return 0, io.ErrUnexpectedEOF
 	}
-	copy(p.Unk0[:], data[0:2])
+	p.Unk0 = data[0]
+	p.Unk1 = data[1]
 	p.PlayerName = cString16(data[2:68])
 	p.PlayerClass = data[68]
 	p.IsFemale = data[69]
