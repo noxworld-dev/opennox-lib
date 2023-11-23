@@ -12,6 +12,7 @@ import (
 
 	eudeval "github.com/noxworld-dev/noxscript/eud/v171/eval"
 	nseval3 "github.com/noxworld-dev/noxscript/ns/v3/eval"
+	ns3vm "github.com/noxworld-dev/noxscript/ns/v3/vm"
 	ns4 "github.com/noxworld-dev/noxscript/ns/v4"
 	nseval4 "github.com/noxworld-dev/noxscript/ns/v4/eval"
 
@@ -171,6 +172,9 @@ func (vm *VM) initPackages(g script.Game) {
 	})
 	// TODO: properly virtualize
 	script.SetRuntime(g)
+	if v, ok := g.(ns3vm.Game); ok {
+		ns3vm.SetRuntime(v.NoxScriptVM())
+	}
 	if v, ok := g.(ns4.Game); ok {
 		ns4.SetRuntime(v.NoxScript())
 	}
