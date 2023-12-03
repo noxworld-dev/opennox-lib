@@ -75,6 +75,7 @@ func init() {
 		"DamageManaBomb":               reflect.ValueOf(object.DamageManaBomb),
 		"DamagePlasma":                 reflect.ValueOf(object.DamagePlasma),
 		"DamagePoison":                 reflect.ValueOf(object.DamagePoison),
+		"DamageTrue":                   reflect.ValueOf(object.DamageTrue),
 		"DamageTypeNames":              reflect.ValueOf(&object.DamageTypeNames).Elem(),
 		"DamageZapRay":                 reflect.ValueOf(object.DamageZapRay),
 		"ExitClassNames":               reflect.ValueOf(&object.ExitClassNames).Elem(),

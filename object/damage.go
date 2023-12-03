@@ -40,6 +40,9 @@ var goDamageTypeNames = []string{
 func ParseDamageType(name string) (DamageType, error) {
 	s := strings.ToUpper(name)
 	s = strings.TrimPrefix(s, "DAMAGE_")
+	if s == "TRUE" {
+		return DamageTrue, nil
+	}
 	for i, v := range DamageTypeNames {
 		if v == s {
 			return DamageType(i), nil
@@ -48,10 +51,11 @@ func ParseDamageType(name string) (DamageType, error) {
 	return 0, fmt.Errorf("invalid damage name: %q", name)
 }
 
-type DamageType uint32
+type DamageType int32
 
 const (
-	DamageBlade = DamageType(iota)
+	DamageTrue = DamageType(iota - 1)
+	DamageBlade
 	DamageFlame
 	DamageCrush
 	DamageImpale
@@ -72,6 +76,9 @@ const (
 )
 
 func (v DamageType) String() string {
+	if v == DamageTrue {
+		return "DAMAGE_TRUE"
+	}
 	if int(v) < len(DamageTypeNames) {
 		return "DAMAGE_" + DamageTypeNames[v]
 	}
@@ -79,6 +86,9 @@ func (v DamageType) String() string {
 }
 
 func (v DamageType) GoString() string {
+	if v == DamageTrue {
+		return "DamageTrue"
+	}
 	if int(v) < len(goDamageTypeNames) {
 		return goDamageTypeNames[v]
 	}
@@ -86,6 +96,9 @@ func (v DamageType) GoString() string {
 }
 
 func (v DamageType) MarshalJSON() ([]byte, error) {
+	if v == DamageTrue {
+		return json.Marshal("DAMAGE_TRUE")
+	}
 	if int(v) < len(DamageTypeNames) {
 		return json.Marshal("DAMAGE_" + DamageTypeNames[v])
 	}
