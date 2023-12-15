@@ -1,6 +1,8 @@
 package object
 
-import "encoding/json"
+import (
+	"github.com/noxworld-dev/opennox-lib/enum"
+)
 
 var MonsterClassNames = []string{
 	"SMALL_MONSTER", "MEDIUM_MONSTER", "LARGE_MONSTER", "SHOPKEEPER", "NPC", "FEMALE_NPC",
@@ -14,16 +16,14 @@ func (c SubClass) AsMonster() MonsterClass {
 }
 
 func ParseMonsterClass(s string) (MonsterClass, error) {
-	v, err := parseEnum("monster class", s, MonsterClassNames)
-	return MonsterClass(v), err
+	return enum.Parse[MonsterClass]("monster class", s, MonsterClassNames)
 }
 
 func ParseMonsterClassSet(s string) (MonsterClass, error) {
-	v, err := parseEnumSet("monster class", s, MonsterClassNames)
-	return MonsterClass(v), err
+	return enum.ParseSet[MonsterClass]("monster class", s, MonsterClassNames)
 }
 
-var _ enum[MonsterClass] = MonsterClass(0)
+var _ enum.Enum[MonsterClass] = MonsterClass(0)
 
 type MonsterClass uint32
 
@@ -59,19 +59,15 @@ func (c MonsterClass) HasAny(c2 MonsterClass) bool {
 }
 
 func (c MonsterClass) Split() []MonsterClass {
-	return splitBits(c)
+	return enum.SplitBits(c)
 }
 
 func (c MonsterClass) String() string {
-	return stringBits(uint32(c), MonsterClassNames)
+	return enum.StringBits(c, MonsterClassNames)
 }
 
 func (c MonsterClass) MarshalJSON() ([]byte, error) {
-	var arr []string
-	for _, s := range c.Split() {
-		arr = append(arr, s.String())
-	}
-	return json.Marshal(arr)
+	return enum.MarshalJSONArray(c)
 }
 
 var MonsterStatusNames = []string{
@@ -89,16 +85,14 @@ var MonsterStatusNames = []string{
 }
 
 func ParseMonsterStatus(s string) (MonsterStatus, error) {
-	v, err := parseEnum("monster status", s, MonsterStatusNames)
-	return MonsterStatus(v), err
+	return enum.Parse[MonsterStatus]("monster status", s, MonsterStatusNames)
 }
 
 func ParseMonsterStatusSet(s string) (MonsterStatus, error) {
-	v, err := parseEnumSet("monster status", s, MonsterStatusNames)
-	return MonsterStatus(v), err
+	return enum.ParseSet[MonsterStatus]("monster status", s, MonsterStatusNames)
 }
 
-var _ enum[MonsterStatus] = MonsterStatus(0)
+var _ enum.Enum[MonsterStatus] = MonsterStatus(0)
 
 type MonsterStatus uint32
 
@@ -111,19 +105,15 @@ func (c MonsterStatus) HasAny(c2 MonsterStatus) bool {
 }
 
 func (c MonsterStatus) Split() []MonsterStatus {
-	return splitBits(c)
+	return enum.SplitBits(c)
 }
 
 func (c MonsterStatus) String() string {
-	return stringBits(uint32(c), MonsterStatusNames)
+	return enum.StringBits(c, MonsterStatusNames)
 }
 
 func (c MonsterStatus) MarshalJSON() ([]byte, error) {
-	var arr []string
-	for _, s := range c.Split() {
-		arr = append(arr, s.String())
-	}
-	return json.Marshal(arr)
+	return enum.MarshalJSONArray(c)
 }
 
 const (

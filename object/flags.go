@@ -3,6 +3,8 @@ package object
 import (
 	"encoding/json"
 	"strings"
+
+	"github.com/noxworld-dev/opennox-lib/enum"
 )
 
 var FlagsNames = []string{
@@ -16,16 +18,14 @@ var FlagsNames = []string{
 	"NO_AUTO_DROP", "FLICKER", "SELECTED", "MARKED",
 }
 
-var _ enum[Flags] = Flags(0)
+var _ enum.Enum[Flags] = Flags(0)
 
 func ParseFlag(s string) (Flags, error) {
-	v, err := parseEnum("flag", s, FlagsNames)
-	return Flags(v), err
+	return enum.Parse[Flags]("flag", s, FlagsNames)
 }
 
 func ParseFlagSet(s string) (Flags, error) {
-	v, err := parseEnumSet("flag", s, FlagsNames)
-	return Flags(v), err
+	return enum.ParseSet[Flags]("flag", s, FlagsNames)
 }
 
 type Flags uint32

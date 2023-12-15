@@ -1,6 +1,8 @@
 package object
 
-import "encoding/json"
+import (
+	"github.com/noxworld-dev/opennox-lib/enum"
+)
 
 var MissileClassNames = []string{
 	"MISSILE_COUNTERSPELL",
@@ -12,16 +14,14 @@ func (c SubClass) AsMissile() MissileClass {
 }
 
 func ParseMissileClass(s string) (MissileClass, error) {
-	v, err := parseEnum("missile class", s, MissileClassNames)
-	return MissileClass(v), err
+	return enum.Parse[MissileClass]("missile class", s, MissileClassNames)
 }
 
 func ParseMissileClassSet(s string) (MissileClass, error) {
-	v, err := parseEnumSet("missile class", s, MissileClassNames)
-	return MissileClass(v), err
+	return enum.ParseSet[MissileClass]("missile class", s, MissileClassNames)
 }
 
-var _ enum[MissileClass] = MissileClass(0)
+var _ enum.Enum[MissileClass] = MissileClass(0)
 
 type MissileClass uint32
 
@@ -39,17 +39,13 @@ func (c MissileClass) HasAny(c2 MissileClass) bool {
 }
 
 func (c MissileClass) Split() []MissileClass {
-	return splitBits(c)
+	return enum.SplitBits(c)
 }
 
 func (c MissileClass) String() string {
-	return stringBits(uint32(c), MissileClassNames)
+	return enum.StringBits(c, MissileClassNames)
 }
 
 func (c MissileClass) MarshalJSON() ([]byte, error) {
-	var arr []string
-	for _, s := range c.Split() {
-		arr = append(arr, s.String())
-	}
-	return json.Marshal(arr)
+	return enum.MarshalJSONArray(c)
 }

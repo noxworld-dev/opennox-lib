@@ -1,7 +1,7 @@
 package object
 
 import (
-	"encoding/json"
+	"github.com/noxworld-dev/opennox-lib/enum"
 )
 
 var ClassNames = []string{
@@ -47,16 +47,14 @@ var goClassNames = []string{
 	"ClassPickup",
 }
 
-var _ enum[Class] = Class(0)
+var _ enum.Enum[Class] = Class(0)
 
 func ParseClass(s string) (Class, error) {
-	v, err := parseEnum("class", s, ClassNames)
-	return Class(v), err
+	return enum.Parse[Class]("class", s, ClassNames)
 }
 
 func ParseClassSet(s string) (Class, error) {
-	v, err := parseEnumSet("class", s, ClassNames)
-	return Class(v), err
+	return enum.ParseSet[Class]("class", s, ClassNames)
 }
 
 type Class uint32
@@ -110,21 +108,17 @@ func (c Class) HasAny(c2 Class) bool {
 }
 
 func (c Class) Split() []Class {
-	return splitBits(c)
+	return enum.SplitBits(c)
 }
 
 func (c Class) String() string {
-	return stringBits(uint32(c), ClassNames)
+	return enum.StringBits(uint32(c), ClassNames)
 }
 
 func (c Class) GoString() string {
-	return stringBits(uint32(c), goClassNames)
+	return enum.StringBits(uint32(c), goClassNames)
 }
 
 func (c Class) MarshalJSON() ([]byte, error) {
-	var arr []string
-	for _, s := range c.Split() {
-		arr = append(arr, s.String())
-	}
-	return json.Marshal(arr)
+	return enum.MarshalJSONArray(c)
 }

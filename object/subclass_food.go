@@ -1,6 +1,8 @@
 package object
 
-import "encoding/json"
+import (
+	"github.com/noxworld-dev/opennox-lib/enum"
+)
 
 var FoodClassNames = []string{
 	"SIMPLE", "APPLE", "JUG",
@@ -16,16 +18,14 @@ func (c SubClass) AsFood() FoodClass {
 }
 
 func ParseFoodClass(s string) (FoodClass, error) {
-	v, err := parseEnum("food class", s, FoodClassNames)
-	return FoodClass(v), err
+	return enum.Parse[FoodClass]("food class", s, FoodClassNames)
 }
 
 func ParseFoodClassSet(s string) (FoodClass, error) {
-	v, err := parseEnumSet("food class", s, FoodClassNames)
-	return FoodClass(v), err
+	return enum.ParseSet[FoodClass]("food class", s, FoodClassNames)
 }
 
-var _ enum[FoodClass] = FoodClass(0)
+var _ enum.Enum[FoodClass] = FoodClass(0)
 
 type FoodClass uint32
 
@@ -58,17 +58,13 @@ func (c FoodClass) HasAny(c2 FoodClass) bool {
 }
 
 func (c FoodClass) Split() []FoodClass {
-	return splitBits(c)
+	return enum.SplitBits(c)
 }
 
 func (c FoodClass) String() string {
-	return stringBits(uint32(c), FoodClassNames)
+	return enum.StringBits(c, FoodClassNames)
 }
 
 func (c FoodClass) MarshalJSON() ([]byte, error) {
-	var arr []string
-	for _, s := range c.Split() {
-		arr = append(arr, s.String())
-	}
-	return json.Marshal(arr)
+	return enum.MarshalJSONArray(c)
 }

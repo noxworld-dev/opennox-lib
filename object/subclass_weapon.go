@@ -1,6 +1,8 @@
 package object
 
-import "encoding/json"
+import (
+	"github.com/noxworld-dev/opennox-lib/enum"
+)
 
 var WeaponClassNames = []string{
 	"FLAG",
@@ -37,16 +39,14 @@ func (c SubClass) AsWeapon() WeaponClass {
 }
 
 func ParseWeaponClass(s string) (WeaponClass, error) {
-	v, err := parseEnum("weapon class", s, WeaponClassNames)
-	return WeaponClass(v), err
+	return enum.Parse[WeaponClass]("weapon class", s, WeaponClassNames)
 }
 
 func ParseWeaponClassSet(s string) (WeaponClass, error) {
-	v, err := parseEnumSet("weapon class", s, WeaponClassNames)
-	return WeaponClass(v), err
+	return enum.ParseSet[WeaponClass]("weapon class", s, WeaponClassNames)
 }
 
-var _ enum[WeaponClass] = WeaponClass(0)
+var _ enum.Enum[WeaponClass] = WeaponClass(0)
 
 type WeaponClass uint32
 
@@ -89,17 +89,13 @@ func (c WeaponClass) HasAny(c2 WeaponClass) bool {
 }
 
 func (c WeaponClass) Split() []WeaponClass {
-	return splitBits(c)
+	return enum.SplitBits(c)
 }
 
 func (c WeaponClass) String() string {
-	return stringBits(uint32(c), WeaponClassNames)
+	return enum.StringBits(c, WeaponClassNames)
 }
 
 func (c WeaponClass) MarshalJSON() ([]byte, error) {
-	var arr []string
-	for _, s := range c.Split() {
-		arr = append(arr, s.String())
-	}
-	return json.Marshal(arr)
+	return enum.MarshalJSONArray(c)
 }

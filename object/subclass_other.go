@@ -1,6 +1,8 @@
 package object
 
-import "encoding/json"
+import (
+	"github.com/noxworld-dev/opennox-lib/enum"
+)
 
 var OtherClassNames = []string{
 	"HEAVY", "LAVA", "GATE", "VISIBLE_OBELISK", "INVISIBLE_OBELISK", "TECH", "LOTD",
@@ -12,16 +14,14 @@ func (c SubClass) AsOther() OtherClass {
 }
 
 func ParseOtherClass(s string) (OtherClass, error) {
-	v, err := parseEnum("other class", s, OtherClassNames)
-	return OtherClass(v), err
+	return enum.Parse[OtherClass]("other class", s, OtherClassNames)
 }
 
 func ParseOtherClassSet(s string) (OtherClass, error) {
-	v, err := parseEnumSet("other class", s, OtherClassNames)
-	return OtherClass(v), err
+	return enum.ParseSet[OtherClass]("other class", s, OtherClassNames)
 }
 
-var _ enum[OtherClass] = OtherClass(0)
+var _ enum.Enum[OtherClass] = OtherClass(0)
 
 type OtherClass uint32
 
@@ -50,17 +50,13 @@ func (c OtherClass) HasAny(c2 OtherClass) bool {
 }
 
 func (c OtherClass) Split() []OtherClass {
-	return splitBits(c)
+	return enum.SplitBits(c)
 }
 
 func (c OtherClass) String() string {
-	return stringBits(uint32(c), OtherClassNames)
+	return enum.StringBits(c, OtherClassNames)
 }
 
 func (c OtherClass) MarshalJSON() ([]byte, error) {
-	var arr []string
-	for _, s := range c.Split() {
-		arr = append(arr, s.String())
-	}
-	return json.Marshal(arr)
+	return enum.MarshalJSONArray(c)
 }

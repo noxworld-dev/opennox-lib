@@ -1,13 +1,18 @@
-package object
+package enum
 
 import (
 	"encoding/json"
 	"fmt"
+	"math/bits"
 	"strconv"
 	"strings"
 )
 
-type enum[T ~uint32] interface {
+type number interface {
+	~uint64 | ~uint32 | ~uint16 | ~uint8
+}
+
+type Enum[T number] interface {
 	json.Marshaler
 	Has(c2 T) bool
 	HasAny(c2 T) bool
@@ -15,9 +20,14 @@ type enum[T ~uint32] interface {
 	String() string
 }
 
-func splitBits[T ~uint32](v T) (out []T) {
-	for i := 0; i < 32; i++ {
-		v2 := T(1 << i)
+func bitSize[T number]() int {
+	var zero T
+	return bits.OnesCount64(uint64(^zero))
+}
+
+func SplitBits[T number](v T) (out []T) {
+	for i := 0; i < bitSize[T](); i++ {
+		v2 := T(1) << i
 		if v&v2 != 0 {
 			out = append(out, v2)
 		}
@@ -25,10 +35,10 @@ func splitBits[T ~uint32](v T) (out []T) {
 	return
 }
 
-func stringBits(v uint32, names []string) string {
+func StringBits[T number](v T, names []string) string {
 	var out []string
-	for i := 0; i < 32; i++ {
-		v2 := uint32(1 << i)
+	for i := 0; i < bitSize[T](); i++ {
+		v2 := T(1) << i
 		if v&v2 != 0 {
 			if i < len(names) {
 				out = append(out, names[i])
@@ -40,10 +50,10 @@ func stringBits(v uint32, names []string) string {
 	return strings.Join(out, " | ")
 }
 
-func stringBitsRaw(v uint32) string {
+func StringBitsRaw[T number](v T) string {
 	var out []string
-	for i := 0; i < 32; i++ {
-		v2 := uint32(1 << i)
+	for i := 0; i < bitSize[T](); i++ {
+		v2 := T(1) << i
 		if v&v2 != 0 {
 			out = append(out, "0x"+strconv.FormatUint(uint64(v2), 16))
 		}
@@ -51,7 +61,7 @@ func stringBitsRaw(v uint32) string {
 	return strings.Join(out, " | ")
 }
 
-func parseEnum(ename string, s string, names []string) (uint32, error) {
+func Parse[T number](ename string, s string, names []string) (T, error) {
 	s = strings.ToUpper(s)
 	if s == "" || s == "NULL" {
 		return 0, nil
@@ -64,14 +74,14 @@ func parseEnum(ename string, s string, names []string) (uint32, error) {
 	return 0, fmt.Errorf("invalid %s name: %q", ename, s)
 }
 
-func parseEnumSet(ename string, s string, names []string) (uint32, error) {
+func ParseSet[T number](ename string, s string, names []string) (T, error) {
 	var (
-		out  uint32
+		out  T
 		last error
 	)
 	for _, w := range strings.Split(s, "+") {
 		w = strings.TrimSpace(w)
-		v, err := parseEnum(ename, w, names)
+		v, err := Parse[T](ename, w, names)
 		if err != nil {
 			last = err
 		}
@@ -80,7 +90,7 @@ func parseEnumSet(ename string, s string, names []string) (uint32, error) {
 	return out, last
 }
 
-func parseEnumMulti(ename string, s string, lists [][]string) (uint32, error) {
+func ParseMulti[T number](ename string, s string, lists [][]string) (T, error) {
 	s = strings.ToUpper(s)
 	if s == "" || s == "NULL" {
 		return 0, nil
@@ -95,18 +105,26 @@ func parseEnumMulti(ename string, s string, lists [][]string) (uint32, error) {
 	return 0, fmt.Errorf("invalid %s name: %q", ename, s)
 }
 
-func parseEnumSetMulti(ename string, s string, lists [][]string) (uint32, error) {
+func ParseSetMulti[T number](ename string, s string, lists [][]string) (T, error) {
 	var (
-		out  uint32
+		out  T
 		last error
 	)
 	for _, w := range strings.Split(s, "+") {
 		w = strings.TrimSpace(w)
-		v, err := parseEnumMulti(ename, w, lists)
+		v, err := ParseMulti[T](ename, w, lists)
 		if err != nil {
 			last = err
 		}
 		out |= v
 	}
 	return out, last
+}
+
+func MarshalJSONArray[E interface{ Split() []T }, T interface{ String() string }](v E) ([]byte, error) {
+	var arr []string
+	for _, s := range v.Split() {
+		arr = append(arr, s.String())
+	}
+	return json.Marshal(arr)
 }

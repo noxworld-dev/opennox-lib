@@ -1,6 +1,8 @@
 package object
 
-import "encoding/json"
+import (
+	"github.com/noxworld-dev/opennox-lib/enum"
+)
 
 var ExitClassNames = []string{
 	"QUEST_EXIT",
@@ -12,16 +14,14 @@ func (c SubClass) AsExit() ExitClass {
 }
 
 func ParseExitClass(s string) (ExitClass, error) {
-	v, err := parseEnum("exit class", s, ExitClassNames)
-	return ExitClass(v), err
+	return enum.Parse[ExitClass]("exit class", s, ExitClassNames)
 }
 
 func ParseExitClassSet(s string) (ExitClass, error) {
-	v, err := parseEnumSet("exit class", s, ExitClassNames)
-	return ExitClass(v), err
+	return enum.ParseSet[ExitClass]("exit class", s, ExitClassNames)
 }
 
-var _ enum[ExitClass] = ExitClass(0)
+var _ enum.Enum[ExitClass] = ExitClass(0)
 
 type ExitClass uint32
 
@@ -39,17 +39,13 @@ func (c ExitClass) HasAny(c2 ExitClass) bool {
 }
 
 func (c ExitClass) Split() []ExitClass {
-	return splitBits(c)
+	return enum.SplitBits(c)
 }
 
 func (c ExitClass) String() string {
-	return stringBits(uint32(c), ExitClassNames)
+	return enum.StringBits(c, ExitClassNames)
 }
 
 func (c ExitClass) MarshalJSON() ([]byte, error) {
-	var arr []string
-	for _, s := range c.Split() {
-		arr = append(arr, s.String())
-	}
-	return json.Marshal(arr)
+	return enum.MarshalJSONArray(c)
 }

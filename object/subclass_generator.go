@@ -1,6 +1,8 @@
 package object
 
-import "encoding/json"
+import (
+	"github.com/noxworld-dev/opennox-lib/enum"
+)
 
 var GeneratorClassNames = []string{
 	"GENERATOR_NW",
@@ -14,16 +16,14 @@ func (c SubClass) AsGenerator() GeneratorClass {
 }
 
 func ParseGeneratorClass(s string) (GeneratorClass, error) {
-	v, err := parseEnum("generator class", s, GeneratorClassNames)
-	return GeneratorClass(v), err
+	return enum.Parse[GeneratorClass]("generator class", s, GeneratorClassNames)
 }
 
 func ParseGeneratorClassSet(s string) (GeneratorClass, error) {
-	v, err := parseEnumSet("generator class", s, GeneratorClassNames)
-	return GeneratorClass(v), err
+	return enum.ParseSet[GeneratorClass]("generator class", s, GeneratorClassNames)
 }
 
-var _ enum[GeneratorClass] = GeneratorClass(0)
+var _ enum.Enum[GeneratorClass] = GeneratorClass(0)
 
 type GeneratorClass uint32
 
@@ -43,17 +43,13 @@ func (c GeneratorClass) HasAny(c2 GeneratorClass) bool {
 }
 
 func (c GeneratorClass) Split() []GeneratorClass {
-	return splitBits(c)
+	return enum.SplitBits(c)
 }
 
 func (c GeneratorClass) String() string {
-	return stringBits(uint32(c), GeneratorClassNames)
+	return enum.StringBits(c, GeneratorClassNames)
 }
 
 func (c GeneratorClass) MarshalJSON() ([]byte, error) {
-	var arr []string
-	for _, s := range c.Split() {
-		arr = append(arr, s.String())
-	}
-	return json.Marshal(arr)
+	return enum.MarshalJSONArray(c)
 }

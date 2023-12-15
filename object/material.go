@@ -1,7 +1,7 @@
 package object
 
 import (
-	"encoding/json"
+	"github.com/noxworld-dev/opennox-lib/enum"
 )
 
 var MaterialNames = []string{
@@ -9,16 +9,14 @@ var MaterialNames = []string{
 	"GLASS", "PAPER", "SNOW", "MUD", "MAGIC", "DIAMOND", "NONE",
 }
 
-var _ enum[Material] = Material(0)
+var _ enum.Enum[Material] = Material(0)
 
 func ParseMaterial(s string) (Material, error) {
-	v, err := parseEnum("material", s, MaterialNames)
-	return Material(v), err
+	return enum.Parse[Material]("material", s, MaterialNames)
 }
 
 func ParseMaterialSet(s string) (Material, error) {
-	v, err := parseEnumSet("material", s, MaterialNames)
-	return Material(v), err
+	return enum.ParseSet[Material]("material", s, MaterialNames)
 }
 
 type Material uint32
@@ -50,17 +48,13 @@ func (c Material) HasAny(c2 Material) bool {
 }
 
 func (c Material) Split() []Material {
-	return splitBits(c)
+	return enum.SplitBits(c)
 }
 
 func (c Material) String() string {
-	return stringBits(uint32(c), MaterialNames)
+	return enum.StringBits(c, MaterialNames)
 }
 
 func (c Material) MarshalJSON() ([]byte, error) {
-	var arr []string
-	for _, s := range c.Split() {
-		arr = append(arr, s.String())
-	}
-	return json.Marshal(arr)
+	return enum.MarshalJSONArray(c)
 }
