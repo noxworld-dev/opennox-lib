@@ -1,13 +1,79 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 
+	"github.com/spf13/cobra"
 	"golang.org/x/exp/slices"
 
 	"github.com/noxworld-dev/opennox-lib/maps"
 )
+
+func init() {
+	cmd := &cobra.Command{
+		Use:     "map command",
+		Short:   "Tools for working with Nox maps",
+		Aliases: []string{"m", "maps"},
+	}
+	Root.AddCommand(cmd)
+
+	cmdCompress := &cobra.Command{
+		Use:   "compress mapdir",
+		Short: "Compresses a Nox/OpenNox map to ZIP archive",
+	}
+	cmd.AddCommand(cmdCompress)
+	cmdCompressFormat := cmdCompress.Flags().StringP("format", "f", "zip", "format to use (only zip for now)")
+	cmdCompressOut := cmdCompress.Flags().StringP("out", "o", "", "output file name")
+	cmdCompress.RunE = func(cmd *cobra.Command, args []string) error {
+		if len(args) != 1 {
+			return errors.New("one file path expected")
+		}
+		return cmdMapCompress(cmd, args[0], *cmdCompressOut, *cmdCompressFormat)
+	}
+}
+
+func cmdMapCompress(cmd *cobra.Command, in, out string, format string) error {
+	fi, err := os.Stat(in)
+	if err != nil {
+		return err
+	}
+	isDir := fi.IsDir()
+	if out == "" {
+		base := filepath.Base(in)
+		if !isDir {
+			base = strings.TrimSuffix(base, filepath.Ext(base))
+		}
+		out = base + "." + format
+	}
+	switch format {
+	default:
+		return fmt.Errorf("unsupported format: %s", format)
+	case "nxz":
+		if isDir {
+			in = filepath.Join(in, filepath.Base(in)+maps.Ext)
+		}
+		// FIXME: support NXZ encoding
+		return fmt.Errorf("NXZ encoding is not supported yet")
+	case "zip":
+		if !isDir {
+			in = filepath.Dir(in)
+		}
+		f, err := os.Create(out)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+
+		if err = maps.CompressMap(f, nil, in); err != nil {
+			return err
+		}
+		return f.Close()
+	}
+}
 
 func mapReadRawSections(fname string) ([]maps.RawSection, *maps.Header, error) {
 	f, err := os.Open(fname)

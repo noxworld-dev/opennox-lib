@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/julienschmidt/httprouter"
+	"golang.org/x/exp/slices"
 
 	"github.com/noxworld-dev/opennox-lib/ifs"
 )
@@ -39,16 +40,31 @@ var (
 	}
 	allowedMapFiles = []string{
 		"go.mod", "go.sum", // part of the dev environment for map scripts
+		"LICENSE", // no extension to whitelist
 	}
 	excludeMapFiles = []string{
 		"user.rul", // user defined, should not be distributed
 		"temp.bmp", // temporary
 	}
+	lowerMapFileExt = []string{
+		".map",
+		".rul",
+	}
 )
 
 // IsAllowedFile checks if the file with a given name is allowed to be distributed with the map.
 func IsAllowedFile(path string) bool {
-	path = strings.ToLower(filepath.Base(path))
+	if path == "" || path == "." {
+		return true
+	}
+	if strings.HasPrefix(path, ".") && !strings.HasPrefix(path, "./") {
+		return false
+	}
+	path = filepath.Base(path)
+	ext := strings.ToLower(filepath.Ext(path))
+	if slices.Contains(lowerMapFileExt, ext) {
+		path = strings.ToLower(path)
+	}
 	for _, name := range excludeMapFiles {
 		if path == name {
 			return false
@@ -59,7 +75,6 @@ func IsAllowedFile(path string) bool {
 			return true
 		}
 	}
-	ext := filepath.Ext(path)
 	for _, e := range excludeMapExt {
 		if e == ext {
 			return false
@@ -71,6 +86,59 @@ func IsAllowedFile(path string) bool {
 		}
 	}
 	return false // unrecognized
+}
+
+// CompressMap collects and compresses relevant files from Nox/OpenNox map directory.
+func CompressMap(w io.Writer, fss fs.FS, dir string) error {
+	if fss == nil {
+		fss = os.DirFS(dir)
+		dir = "."
+	}
+	zw := zip.NewWriter(w)
+	defer zw.Close()
+	dir = lpath.Clean(dir)
+	pref := strings.TrimSuffix(dir, "/") + "/"
+	return fs.WalkDir(fss, dir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		name := strings.TrimPrefix(path, pref)
+		name = lpath.Clean(name)
+		if name != "." && strings.HasPrefix(name, ".") {
+			// Skip hidden files and folders.
+			if d.IsDir() {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if d.IsDir() {
+			if d.Type()&fs.ModeSymlink != 0 {
+				return filepath.SkipDir // Always skip symlinks.
+			}
+			return nil // Continue into directories.
+		}
+		if !d.Type().IsRegular() {
+			return nil // Skip symlinks and other non-regular files.
+		}
+		ext := strings.ToLower(lpath.Ext(name))
+		if slices.Contains(lowerMapFileExt, ext) {
+			name = lpath.Join(lpath.Dir(name), strings.ToLower(lpath.Base(name)))
+		}
+		if !IsAllowedFile(path) {
+			return nil // skip
+		}
+		f, err := zw.Create(name)
+		if err != nil {
+			return err
+		}
+		r, err := fss.Open(path)
+		if err != nil {
+			return err
+		}
+		defer r.Close()
+		_, err = io.Copy(f, r)
+		return err
+	})
 }
 
 func NewServer(path string) *Server {
@@ -180,42 +248,7 @@ func (s *Server) handleMapDownload(w http.ResponseWriter, r *http.Request, p htt
 	}
 	// serve compressed map file
 	w.Header().Set("Content-Type", contentTypeZIP)
-	zw := zip.NewWriter(w)
-	defer zw.Close()
-	err = filepath.WalkDir(base, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if d.IsDir() {
-			if d.Type()&fs.ModeSymlink != 0 {
-				return filepath.SkipDir // Always skip symlinks.
-			}
-			return nil // Continue into directories.
-		}
-		if !d.Type().IsRegular() {
-			return nil // Skip symlinks and other non-regular files.
-		}
-		if !IsAllowedFile(path) {
-			return nil // skip
-		}
-		name, err := filepath.Rel(base, path)
-		if err != nil {
-			return err
-		}
-		name = strings.ToLower(name)
-		name = lpath.Clean(name)
-		f, err := zw.Create(name)
-		if err != nil {
-			return err
-		}
-		r, err := os.Open(path)
-		if err != nil {
-			return err
-		}
-		defer r.Close()
-		_, err = io.Copy(f, r)
-		return err
-	})
+	err = CompressMap(w, nil, base)
 	if err != nil {
 		Log.Printf("error serving map %q: %v", name, err)
 		w.WriteHeader(http.StatusInternalServerError)

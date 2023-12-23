@@ -15,6 +15,49 @@ import (
 	"github.com/noxworld-dev/opennox-lib/noxtest"
 )
 
+func TestIsAllowedFile(t *testing.T) {
+	var cases = []struct {
+		path string
+		exp  bool
+	}{
+		{"example.map", true},
+		{"example.nxz", false},
+		{"example.rul", true},
+		{"example.zip", false},
+		{"example.tar", false},
+		{"example.tar.gz", false},
+		{"user.rul", false},
+		{"some.lua", true},
+		{"go.mod", true},
+		{"go.sum", true},
+		{"some.go", true},
+		{"sub/some.go", true},
+		{"vendor/sub/some.go", true},
+		{"LICENSE", true},
+		{"README.md", true},
+		{"README.txt", true},
+		{"some.other", false},
+		{"some.json", true},
+		{"some.yaml", true},
+		{"some.yml", true},
+		{"some.png", true},
+		{"some.jpg", true},
+		{"some.mp3", true},
+		{"some.ogg", true},
+		{".git/config", false},
+		{".git/refs/heads/fake.go", false},
+	}
+	for _, c := range cases {
+		c := c
+		t.Run(c.path, func(t *testing.T) {
+			got := IsAllowedFile(c.path)
+			if got != c.exp {
+				t.FailNow()
+			}
+		})
+	}
+}
+
 func copyFile(t testing.TB, dst, src string) {
 	s, err := ifs.Open(src)
 	require.NoError(t, err)
