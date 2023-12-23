@@ -12,7 +12,8 @@ import (
 
 var datadir struct {
 	sync.Once
-	path string
+	path  string
+	found bool
 }
 
 // getData returns the current Nox data dir.
@@ -37,8 +38,14 @@ func Data(path ...string) string {
 	return filepath.Join(args...)
 }
 
+// Found check if the data directory was indeed found (via Data, SetData or similar function).
+func Found() bool {
+	return datadir.found
+}
+
 // SetData the Nox data dir.
 func SetData(dir string) {
+	datadir.found = dir != ""
 	if abs, err := filepath.Abs(dir); err == nil {
 		dir = abs
 	}
