@@ -80,6 +80,15 @@ func (c RGBA5551) ColorNRGBA() (v color.NRGBA) {
 	v.G = byte((c >> 2) & 0xf8)
 	v.B = byte((c << 3) & 0xf8)
 	v.A = 0xff
+	if v.R == 0xf8 {
+		v.R = 0xff
+	}
+	if v.G == 0xf8 {
+		v.G = 0xff
+	}
+	if v.B == 0xf8 {
+		v.B = 0xff
+	}
 	if c>>15 != 0 {
 		v.A = 0
 	}
@@ -94,6 +103,15 @@ func (c RGBA5551) ColorRGBA() (v color.RGBA) {
 	v.R = byte((c >> 7) & 0xf8)
 	v.G = byte((c >> 2) & 0xf8)
 	v.B = byte((c << 3) & 0xf8)
+	if v.R == 0xf8 {
+		v.R = 0xff
+	}
+	if v.G == 0xf8 {
+		v.G = 0xff
+	}
+	if v.B == 0xf8 {
+		v.B = 0xff
+	}
 	v.A = 0xff
 	return
 }
