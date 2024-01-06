@@ -56,7 +56,7 @@ func init() {
 	}
 
 	cmdDis := &cobra.Command{
-		Use:   "disasm input.obj",
+		Use:   "disasm input.obj [output.txt]",
 		Short: "Disassemble binary NoxScript file or map script into text assembly",
 	}
 	cmd.AddCommand(cmdDis)
@@ -65,14 +65,16 @@ func init() {
 	}
 
 	cmdDecomp := &cobra.Command{
-		Use:   "decomp input.obj",
+		Use:   "decomp input.obj [output.go]",
 		Short: "Decompile binary NoxScript file or map script into human-readable script",
 	}
 	cmd.AddCommand(cmdDecomp)
 	cmdDecompNoFold := cmdDecomp.Flags().Bool("nofold", false, "do not fold the code")
 	cmdDecompNoOpt := cmdDecomp.Flags().Bool("noopt", false, "do not optimize the code")
+	cmdDecompPkg := cmdDecomp.Flags().String("pkg", "", "package name for the script")
 	cmdDecomp.RunE = func(cmd *cobra.Command, args []string) error {
 		return cmdNSDecomp(cmd, args, &noxast.Config{
+			Package:       *cmdDecompPkg,
 			DoNotOptimize: *cmdDecompNoOpt,
 			DoNotFold:     *cmdDecompNoFold,
 		})
@@ -225,10 +227,19 @@ func cmdNSInsert(cmd *cobra.Command, args []string) error {
 }
 
 func cmdNSDisasm(cmd *cobra.Command, args []string) error {
-	if len(args) != 1 {
-		return errors.New("expected one argument")
+	if len(args) != 1 && len(args) != 2 {
+		return errors.New("expected one or two argument")
 	}
 	fname := args[0]
+	var out io.Writer = os.Stdout
+	if len(args) == 2 {
+		f, err := os.Create(args[1])
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+		out = f
+	}
 	f, err := os.Open(fname)
 	if err != nil {
 		return err
@@ -255,18 +266,18 @@ func cmdNSDisasm(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	if len(scr.Strings) != 0 {
-		fmt.Println("STRINGS:")
+		fmt.Fprintln(out, "STRINGS:")
 		for i, s := range scr.Strings {
-			fmt.Printf("\t%d: %q\n", i, s)
+			fmt.Fprintf(out, "\t%d: %q\n", i, s)
 		}
-		fmt.Println()
+		fmt.Fprintln(out)
 	}
 	var last error
 	for i, fnc := range scr.Funcs {
-		fmt.Printf("func %d: %q\n", i, fnc.Name)
-		fmt.Printf("\targs: %d, locals: %d, returns: %d\n",
+		fmt.Fprintf(out, "func %d: %q\n", i, fnc.Name)
+		fmt.Fprintf(out, "\targs: %d, locals: %d, returns: %d\n",
 			fnc.Args, len(fnc.Vars)-fnc.Args, fnc.Return)
-		fmt.Println()
+		fmt.Fprintln(out)
 
 		code, err := asm.Decode(fnc.Code)
 		if err != nil {
@@ -275,17 +286,33 @@ func cmdNSDisasm(cmd *cobra.Command, args []string) error {
 			last = err
 			continue
 		}
-		_ = asm.Print(os.Stdout, code)
-		fmt.Println()
+		_ = asm.Print(out, code)
+		fmt.Fprintln(out)
 	}
 	return last
 }
 
 func cmdNSDecomp(cmd *cobra.Command, args []string, c *noxast.Config) error {
-	if len(args) != 1 {
-		return errors.New("expected one argument")
+	if len(args) != 1 && len(args) != 2 {
+		return errors.New("expected one or two argument")
 	}
 	fname := args[0]
+	if c.Package == "" {
+		base := filepath.Base(fname)
+		base = strings.TrimSuffix(base, filepath.Ext(base))
+		if base != "" && !strings.ContainsAny(base, " ") {
+			c.Package = strings.ToLower(base)
+		}
+	}
+	var out io.Writer = os.Stdout
+	if len(args) == 2 {
+		f, err := os.Create(args[1])
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+		out = f
+	}
 	f, err := os.Open(fname)
 	if err != nil {
 		return err
@@ -312,5 +339,5 @@ func cmdNSDecomp(cmd *cobra.Command, args []string, c *noxast.Config) error {
 		return err
 	}
 	astf := noxast.Translate(scr, c)
-	return format.Node(os.Stdout, token.NewFileSet(), astf)
+	return format.Node(out, token.NewFileSet(), astf)
 }
