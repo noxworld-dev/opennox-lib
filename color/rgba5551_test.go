@@ -4,7 +4,7 @@ import (
 	"image/color"
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/shoenig/test/must"
 )
 
 func TestRGBA5551(t *testing.T) {
@@ -12,7 +12,7 @@ func TestRGBA5551(t *testing.T) {
 		c := RGBA5551(i)
 		cl := c.ColorNRGBA()
 		c2 := RGBA5551Color(cl.R, cl.G, cl.B, cl.A)
-		require.Equal(t, c, c2, "0x%x", int(c))
+		must.EqOp(t, c, c2, must.Sprintf("0x%x", int(c)))
 	}
 }
 
@@ -31,8 +31,8 @@ func TestRGBA5551Builtin(t *testing.T) {
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			got := m.Convert16(c.exp)
-			require.Equal(t, c.exp16, got)
-			require.Equal(t, c.exp, c.model.Convert(got))
+			must.EqOp(t, c.exp16, got)
+			must.EqOp(t, c.exp, c.model.Convert(got))
 		})
 	}
 }

@@ -5,7 +5,7 @@ import (
 	"image"
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/shoenig/test/must"
 
 	"github.com/noxworld-dev/opennox-lib/wall"
 
@@ -161,19 +161,19 @@ func TestWallDestroy(t *testing.T) {
 	v = Nox.Wall(1, 2)
 	v:Destroy()
 `)
-	require.True(t, v.dead)
+	must.True(t, v.dead)
 	v.dead = false
 
 	g.Exec(`
 	v:Break()
 `)
-	require.True(t, v.dead)
+	must.True(t, v.dead)
 	v.dead = false
 
 	g.Exec(`
 	v:Kill()
 `)
-	require.True(t, v.dead)
+	must.True(t, v.dead)
 	v.dead = false
 }
 
@@ -194,12 +194,12 @@ func TestWallEnabled(t *testing.T) {
 		error("not disabled")
 	end
 `)
-	require.False(t, v.enabled)
+	must.False(t, v.enabled)
 
 	g.Exec(`
 	v.enabled = not v.enabled
 `)
-	require.True(t, v.enabled)
+	must.True(t, v.enabled)
 }
 
 func TestWallToggle(t *testing.T) {
@@ -219,10 +219,10 @@ func TestWallToggle(t *testing.T) {
 		error("not disabled")
 	end
 `)
-	require.False(t, v.enabled)
+	must.False(t, v.enabled)
 
 	g.Exec(`
 	v:Toggle()
 `)
-	require.True(t, v.enabled)
+	must.True(t, v.enabled)
 }

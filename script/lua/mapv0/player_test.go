@@ -3,7 +3,7 @@ package mapv0_test
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/shoenig/test/must"
 
 	"github.com/noxworld-dev/opennox-lib/script"
 	"github.com/noxworld-dev/opennox-lib/types"
@@ -155,14 +155,14 @@ func TestPlayersPrint(t *testing.T) {
 
 	host:Print("foo")
 `)
-	require.Equal(t, "", p1.msg)
-	require.Equal(t, "foo", p2.msg)
+	must.EqOp(t, "", p1.msg)
+	must.EqOp(t, "foo", p2.msg)
 
 	g.Exec(`
 	Nox.Players.Print("bar")
 `)
-	require.Equal(t, "bar", p1.msg)
-	require.Equal(t, "bar", p2.msg)
+	must.EqOp(t, "bar", p1.msg)
+	must.EqOp(t, "bar", p2.msg)
 }
 
 func TestPlayersBlind(t *testing.T) {
@@ -175,38 +175,38 @@ func TestPlayersBlind(t *testing.T) {
 
 	host:Blind()
 `)
-	require.Equal(t, false, p1.blind)
-	require.Equal(t, true, p2.blind)
+	must.EqOp(t, false, p1.blind)
+	must.EqOp(t, true, p2.blind)
 
 	g.Exec(`
 	host:Blind(false)
 `)
-	require.Equal(t, false, p1.blind)
-	require.Equal(t, false, p2.blind)
+	must.EqOp(t, false, p1.blind)
+	must.EqOp(t, false, p2.blind)
 
 	g.Exec(`
 	host:Blind(true)
 `)
-	require.Equal(t, false, p1.blind)
-	require.Equal(t, true, p2.blind)
+	must.EqOp(t, false, p1.blind)
+	must.EqOp(t, true, p2.blind)
 
 	g.Exec(`
 	Nox.Players.Blind()
 `)
-	require.Equal(t, true, p1.blind)
-	require.Equal(t, true, p2.blind)
+	must.EqOp(t, true, p1.blind)
+	must.EqOp(t, true, p2.blind)
 
 	g.Exec(`
 	Nox.Players.Blind(false)
 `)
-	require.Equal(t, false, p1.blind)
-	require.Equal(t, false, p2.blind)
+	must.EqOp(t, false, p1.blind)
+	must.EqOp(t, false, p2.blind)
 
 	g.Exec(`
 	Nox.Players.Blind(true)
 `)
-	require.Equal(t, true, p1.blind)
-	require.Equal(t, true, p2.blind)
+	must.EqOp(t, true, p1.blind)
+	must.EqOp(t, true, p2.blind)
 }
 
 func TestPlayerUnit(t *testing.T) {
@@ -247,7 +247,7 @@ func TestPlayerUnitPos(t *testing.T) {
 
 	p.x, p.y = 3, 4
 `)
-	require.Equal(t, types.Pointf{3, 4}, v.pos)
+	must.EqOp(t, types.Pointf{3, 4}, v.pos)
 }
 
 func TestPlayerPosArg(t *testing.T) {
@@ -260,7 +260,7 @@ func TestPlayerPosArg(t *testing.T) {
 	local v = Nox.Object("Unit2")
 	v:SetPos(p)
 `)
-	require.Equal(t, types.Pointf{1, 2}, v2.pos)
+	must.EqOp(t, types.Pointf{1, 2}, v2.pos)
 }
 
 func TestPlayerObjArg(t *testing.T) {
@@ -273,6 +273,6 @@ func TestPlayerObjArg(t *testing.T) {
 	local v = Nox.Object("Unit2")
 	v:Follow(p)
 `)
-	require.Equal(t, UnitFollow, v2.st)
-	require.Equal(t, types.Pointf{1, 2}, v2.targ)
+	must.EqOp(t, UnitFollow, v2.st)
+	must.EqOp(t, types.Pointf{1, 2}, v2.targ)
 }

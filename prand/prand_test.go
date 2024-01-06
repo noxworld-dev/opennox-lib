@@ -3,7 +3,7 @@ package prand
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/shoenig/test/must"
 )
 
 func TestRand(t *testing.T) {
@@ -17,7 +17,7 @@ func TestRand(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		goti = append(goti, r.Int(0, 0xff))
 	}
-	require.Equal(t, expi, goti)
+	must.Eq(t, expi, goti)
 
 	expf := []float64{
 		-0.625629450097, 0.48100220475199995,
@@ -30,5 +30,5 @@ func TestRand(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		gotf = append(gotf, r.Float(-1, +2))
 	}
-	require.Equal(t, expf, gotf)
+	must.Eq(t, expf, gotf)
 }

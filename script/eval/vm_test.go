@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/shoenig/test/must"
 
 	"github.com/noxworld-dev/opennox-lib/script"
 	"github.com/noxworld-dev/opennox-lib/script/scripttest"
@@ -13,7 +13,7 @@ import (
 
 func TestScriptDir(t *testing.T) {
 	dir, err := os.MkdirTemp("", "opennox_eval_*")
-	require.NoError(t, err)
+	must.NoError(t, err)
 	defer func() {
 		_ = os.RemoveAll(dir)
 	}()
@@ -21,9 +21,9 @@ func TestScriptDir(t *testing.T) {
 	writeFile := func(path string, src string) {
 		path = filepath.Join(dir, path)
 		err = os.MkdirAll(filepath.Dir(path), 0755)
-		require.NoError(t, err)
+		must.NoError(t, err)
 		err = os.WriteFile(path, []byte(src), 0644)
-		require.NoError(t, err)
+		must.NoError(t, err)
 	}
 
 	writeFile("pkg1/script.go", `
@@ -39,6 +39,18 @@ var Cnt int
 func init() { println("init one"); Cnt++ }
 func One() { println("one"); pkg2.Two(); pkg3.Three(); Cnt++ }
 func OnFrame() { println("frame"); Cnt++ }
+
+func Panic1() {
+	panic2()
+}
+func panic2() {
+	func(){
+		panic3()
+	}()
+}
+func panic3() {
+	panic("test")
+}
 `)
 
 	writeFile("pkg2/script.go", `
@@ -54,36 +66,62 @@ package pkg3
 func init() { println("init three") }
 func Three() { println("three") }
 `)
-
-	vm := NewVM(scripttest.Game{T: t}, dir)
+	g := &scripttest.Game{T: t}
+	vm := NewVM(g, dir)
 	err = vm.ExecFile("pkg1")
-	require.NoError(t, err)
+	must.NoError(t, err)
 
 	rv, ok := vm.exportByName(`One`)
-	require.True(t, ok)
+	must.True(t, ok)
 	fnc, ok := rv.Interface().(func())
-	require.True(t, ok)
+	must.True(t, ok)
 	fnc()
 
 	_, err = vm.Exec(`println("builtin")`)
-	require.NoError(t, err)
+	must.NoError(t, err)
 	_, err = vm.Exec(`fmt.Println("fmt")`)
-	require.NoError(t, err)
+	must.NoError(t, err)
 	_, err = vm.Exec(`Game.Global().Print("global")`)
-	require.NoError(t, err)
+	must.NoError(t, err)
 	vm.OnFrame()
 
 	rv, ok = vm.exportByName(`Cnt`)
-	require.True(t, ok)
+	must.True(t, ok)
 	p, ok := rv.Interface().(int)
-	require.True(t, ok)
-	require.Equal(t, int(3), p)
+	must.True(t, ok)
+	must.EqOp(t, 3, p)
 
 	one, err := script.GetVMSymbol[func()](vm, "One")
-	require.NoError(t, err)
+	must.NoError(t, err)
 	one()
 
 	cnt, err := script.GetVMSymbolPtr[int](vm, "Cnt")
-	require.NoError(t, err)
-	require.Equal(t, int(4), *cnt)
+	must.NoError(t, err)
+	must.EqOp(t, 4, *cnt)
+
+	panic1, err := script.GetVMSymbol[func()](vm, "Panic1")
+	must.NoError(t, err)
+	func() {
+		defer func() {
+			recover()
+		}()
+		panic1()
+	}()
+	must.EqOp(t, `info: init two
+info: init three
+info: init one
+info: one
+info: two
+info: three
+info: builtin
+info: fmt
+info: frame
+info: one
+info: two
+info: three
+error: /src/pkg1/script.go:24:2: panic: pkg1.panic3(...)
+error: /src/pkg1/script.go:20:3: panic: pkg1.panic2.func(...)
+error: /src/pkg1/script.go:19:2: panic: pkg1.panic2.func(...)
+error: /src/pkg1/script.go:16:2: panic: pkg1.Panic1(...)
+`, g.Log.String())
 }

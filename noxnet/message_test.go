@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/shoenig/test/must"
 )
 
 func TestDecodePacket(t *testing.T) {
@@ -119,21 +119,21 @@ func TestDecodePacket(t *testing.T) {
 			data, err := os.ReadFile(fname)
 			if errors.Is(err, fs.ErrNotExist) {
 				data, err = AppendPacket(nil, c.packet)
-				require.NoError(t, err)
+				must.NoError(t, err)
 				err = os.WriteFile(fname, data, 0644)
-				require.NoError(t, err)
+				must.NoError(t, err)
 			}
-			require.NoError(t, err)
+			must.NoError(t, err)
 			p, n, err := DecodeAnyPacket(!c.client, data)
-			require.NoError(t, err)
-			require.Equal(t, c.packet, p)
-			require.Equal(t, int(len(data)), int(n))
+			must.NoError(t, err)
+			must.Eq(t, c.packet, p)
+			must.EqOp(t, len(data), n)
 			buf, err := AppendPacket(nil, p)
-			require.NoError(t, err)
-			require.Equal(t, data, buf)
+			must.NoError(t, err)
+			must.Eq(t, data, buf)
 			n, err = DecodePacket(data, p)
-			require.NoError(t, err)
-			require.Equal(t, int(len(data)), int(n))
+			must.NoError(t, err)
+			must.EqOp(t, len(data), n)
 		})
 	}
 }

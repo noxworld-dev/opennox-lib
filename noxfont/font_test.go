@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/shoenig/test/must"
 	"golang.org/x/image/font"
 	"golang.org/x/image/math/fixed"
 
@@ -29,13 +29,13 @@ func TestFonts(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			path := filepath.Join(path, name+Ext)
 			data, err := os.ReadFile(path)
-			require.NoError(t, err)
+			must.NoError(t, err)
 			fnt, err := Decode(bytes.NewReader(data))
-			require.NoError(t, err)
+			must.NoError(t, err)
 			t.Run("encode", func(t *testing.T) {
 				got, err := fnt.Encode()
-				require.NoError(t, err)
-				require.Equal(t, data, got)
+				must.NoError(t, err)
+				must.Eq(t, data, got)
 			})
 			t.Run("draw", func(t *testing.T) {
 				text := "The quick brown fox jumps over the lazy dog."

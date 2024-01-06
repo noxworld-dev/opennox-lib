@@ -3,7 +3,7 @@ package noxcolor
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/shoenig/test/must"
 )
 
 func TestRGB565(t *testing.T) {
@@ -11,6 +11,6 @@ func TestRGB565(t *testing.T) {
 		c := RGB565(i)
 		cl := c.ColorNRGBA()
 		c2 := RGB565Color(cl.R, cl.G, cl.B)
-		require.Equal(t, c, c2, "0x%x", int(c))
+		must.EqOp(t, c, c2, must.Sprintf("0x%x", int(c)))
 	}
 }

@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	ns4 "github.com/noxworld-dev/noxscript/ns/v4"
-	"github.com/stretchr/testify/require"
+	"github.com/shoenig/test/must"
 
 	"github.com/noxworld-dev/opennox-lib/script"
 	"github.com/noxworld-dev/opennox-lib/spell"
@@ -311,8 +311,8 @@ func TestUnitSetPos(t *testing.T) {
 	v2.x = v2.x + 1
 	v2.y = v2.y + 2
 `)
-	require.Equal(t, types.Pointf{X: 3, Y: 4}, obj1.pos)
-	require.Equal(t, types.Pointf{X: 8, Y: 10}, obj2.pos)
+	must.EqOp(t, types.Pointf{X: 3, Y: 4}, obj1.pos)
+	must.EqOp(t, types.Pointf{X: 8, Y: 10}, obj2.pos)
 }
 
 func TestUnitDelete(t *testing.T) {
@@ -323,7 +323,7 @@ func TestUnitDelete(t *testing.T) {
 	local v = Nox.Object("Test")
 	v:Delete()
 `)
-	require.True(t, v.deleted)
+	must.True(t, v.deleted)
 }
 
 func TestUnitDestroy(t *testing.T) {
@@ -334,19 +334,19 @@ func TestUnitDestroy(t *testing.T) {
 	v = Nox.Object("Test")
 	v:Destroy()
 `)
-	require.True(t, v.dead)
+	must.True(t, v.dead)
 	v.dead = false
 
 	g.Exec(`
 	v:Break()
 `)
-	require.True(t, v.dead)
+	must.True(t, v.dead)
 	v.dead = false
 
 	g.Exec(`
 	v:Kill()
 `)
-	require.True(t, v.dead)
+	must.True(t, v.dead)
 	v.dead = false
 }
 
@@ -367,12 +367,12 @@ func TestUnitEnabled(t *testing.T) {
 		error("not disabled")
 	end
 `)
-	require.False(t, v.enabled)
+	must.False(t, v.enabled)
 
 	g.Exec(`
 	v.enabled = not v.enabled
 `)
-	require.True(t, v.enabled)
+	must.True(t, v.enabled)
 }
 
 func TestUnitToggle(t *testing.T) {
@@ -392,12 +392,12 @@ func TestUnitToggle(t *testing.T) {
 		error("not disabled")
 	end
 `)
-	require.False(t, v.enabled)
+	must.False(t, v.enabled)
 
 	g.Exec(`
 	v:Toggle()
 `)
-	require.True(t, v.enabled)
+	must.True(t, v.enabled)
 }
 
 func TestUnitOwner(t *testing.T) {
@@ -409,29 +409,29 @@ func TestUnitOwner(t *testing.T) {
 	v1 = Nox.Object("Test")
 	v2 = Nox.Object("Test2"):SetOwner(v1)
 `)
-	require.Equal(t, obj1, obj2.owner)
+	must.Eq[script.Object](t, obj1, obj2.owner)
 
 	g.Exec(`
 	v2:SetOwner(nil)
 `)
-	require.Nil(t, obj2.owner)
+	must.Eq(t, nil, obj2.owner)
 
 	g.Exec(`
 	v2.owner = v1
 `)
-	require.Equal(t, obj1, obj2.owner)
+	must.Eq[script.Object](t, obj1, obj2.owner)
 
 	g.Exec(`
 	v2.owner = nil
 `)
-	require.Nil(t, obj2.owner)
+	must.Eq(t, nil, obj2.owner)
 
 	g.Exec(`
 	v2.owner = v1
 	v1.owner = v2.owner
 `)
-	require.Equal(t, obj1, obj2.owner)
-	require.Equal(t, obj1, obj1.owner)
+	must.Eq[script.Object](t, obj1, obj2.owner)
+	must.Eq[script.Object](t, obj1, obj1.owner)
 }
 
 func TestUnitFreeze(t *testing.T) {
@@ -442,17 +442,17 @@ func TestUnitFreeze(t *testing.T) {
 	v = Nox.Object("Test")
 	v:Freeze()
 `)
-	require.True(t, v.frozen)
+	must.True(t, v.frozen)
 
 	g.Exec(`
 	v:Freeze(false)
 `)
-	require.False(t, v.frozen)
+	must.False(t, v.frozen)
 
 	g.Exec(`
 	v:Freeze(true)
 `)
-	require.True(t, v.frozen)
+	must.True(t, v.frozen)
 }
 
 func TestUnitHealth(t *testing.T) {
@@ -473,13 +473,13 @@ func TestUnitHealth(t *testing.T) {
 
 	v.health = 1
 `)
-	require.Equal(t, 1, v.health.cur)
+	must.EqOp(t, 1, v.health.cur)
 
 	g.Exec(`
 	v.max_health = 10
 `)
-	require.Equal(t, 10, v.health.cur)
-	require.Equal(t, 10, v.health.max)
+	must.EqOp(t, 10, v.health.cur)
+	must.EqOp(t, 10, v.health.max)
 }
 
 func TestUnitMana(t *testing.T) {
@@ -500,13 +500,13 @@ func TestUnitMana(t *testing.T) {
 
 	v.mana = 1
 `)
-	require.Equal(t, 1, v.mana.cur)
+	must.EqOp(t, 1, v.mana.cur)
 
 	g.Exec(`
 	v.max_mana = 10
 `)
-	require.Equal(t, 10, v.mana.cur)
-	require.Equal(t, 10, v.mana.max)
+	must.EqOp(t, 10, v.mana.cur)
+	must.EqOp(t, 10, v.mana.max)
 }
 
 func TestUnitActions(t *testing.T) {
@@ -518,7 +518,7 @@ func TestUnitActions(t *testing.T) {
 	v1 = Nox.Object("Test")
 	v2 = Nox.Object("Test2")
 `)
-	require.Equal(t, UnitIdle, obj1.st)
+	must.EqOp(t, UnitIdle, obj1.st)
 
 	for _, c := range []struct {
 		name string
@@ -537,7 +537,7 @@ func TestUnitActions(t *testing.T) {
 `,
 				c.name,
 			))
-			require.Equal(t, c.st, obj1.st)
+			must.EqOp(t, c.st, obj1.st)
 		})
 	}
 
@@ -561,8 +561,8 @@ func TestUnitActions(t *testing.T) {
 `,
 					c.name,
 				))
-				require.Equal(t, c.st, obj1.st)
-				require.Equal(t, types.Pointf{1, 2}, obj1.targ)
+				must.EqOp(t, c.st, obj1.st)
+				must.EqOp(t, types.Pointf{1, 2}, obj1.targ)
 			}
 
 			g.Exec(fmt.Sprintf(`
@@ -571,8 +571,8 @@ func TestUnitActions(t *testing.T) {
 `,
 				c.name,
 			))
-			require.Equal(t, c.st, obj1.st)
-			require.Equal(t, obj2.pos, obj1.targ)
+			must.EqOp(t, c.st, obj1.st)
+			must.EqOp(t, obj2.pos, obj1.targ)
 		})
 	}
 }
@@ -589,27 +589,27 @@ func TestUnitCast(t *testing.T) {
 		error("can't cast")
 	end
 `)
-	require.Equal(t, spell.SPELL_BURN, v.spell.id)
-	require.Equal(t, 3, v.spell.lvl)
-	require.Equal(t, v.targ, types.Pointf{1, 2})
+	must.EqOp(t, spell.SPELL_BURN, v.spell.id)
+	must.EqOp(t, 3, v.spell.lvl)
+	must.EqOp(t, v.targ, types.Pointf{1, 2})
 
 	g.Exec(`
 	if not v:Cast("CHARM", 2, v2) then
 		error("can't cast")
 	end
 `)
-	require.Equal(t, spell.SPELL_CHARM, v.spell.id)
-	require.Equal(t, 2, v.spell.lvl)
-	require.Equal(t, v.targ, types.Pointf{4, 5})
+	must.EqOp(t, spell.SPELL_CHARM, v.spell.id)
+	must.EqOp(t, 2, v.spell.lvl)
+	must.EqOp(t, v.targ, types.Pointf{4, 5})
 
 	g.Exec(`
 	if not v:Cast("HASTE", 1, null) then
 		error("can't cast")
 	end
 `)
-	require.Equal(t, spell.SPELL_HASTE, v.spell.id)
-	require.Equal(t, 1, v.spell.lvl)
-	require.Equal(t, v.targ, types.Pointf{})
+	must.EqOp(t, spell.SPELL_HASTE, v.spell.id)
+	must.EqOp(t, 1, v.spell.lvl)
+	must.EqOp(t, v.targ, types.Pointf{})
 }
 
 // TODO: test unit group

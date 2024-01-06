@@ -9,9 +9,8 @@ import (
 	"testing"
 
 	crypt "github.com/noxworld-dev/noxcrypt"
-	"github.com/stretchr/testify/require"
-
 	"github.com/noxworld-dev/noxscript/ns/asm"
+	"github.com/shoenig/test/must"
 
 	"github.com/noxworld-dev/opennox-lib/ifs"
 	"github.com/noxworld-dev/opennox-lib/maps"
@@ -134,8 +133,8 @@ func TestReadFileInfo(t *testing.T) {
 	for _, m := range casesMapInfo {
 		t.Run(m.Filename, func(t *testing.T) {
 			info, err := maps.ReadMapInfo(filepath.Join(path, m.Filename))
-			require.NoError(t, err)
-			require.Equal(t, m, *info)
+			must.NoError(t, err)
+			must.Eq(t, m, *info)
 		})
 	}
 }
@@ -145,7 +144,7 @@ func TestReadFile(t *testing.T) {
 	for _, m := range casesMapInfo {
 		t.Run(m.Filename, func(t *testing.T) {
 			mp, err := maps.ReadMap(filepath.Join(path, m.Filename))
-			require.NoError(t, err)
+			must.NoError(t, err)
 			for _, s := range mp.Unknown {
 				t.Logf("unknwon section: %q [%d]", s.Name, len(s.Data))
 			}
@@ -154,7 +153,7 @@ func TestReadFile(t *testing.T) {
 					t.Logf("script [%d]", len(mp.Script.Data))
 				} else {
 					sc, err := asm.ReadScript(bytes.NewReader(mp.Script.Data))
-					require.NoError(t, err)
+					must.NoError(t, err)
 					t.Logf("script [%d]: %d funcs, %d strings", len(mp.Script.Data), len(sc.Funcs), len(sc.Strings))
 				}
 			}
@@ -165,7 +164,7 @@ func TestReadFile(t *testing.T) {
 func TestMapSections(t *testing.T) {
 	path := noxtest.DataPath(t, maps.Dir)
 	list, err := os.ReadDir(path)
-	require.NoError(t, err)
+	must.NoError(t, err)
 	for _, fi := range list {
 		if !fi.IsDir() {
 			continue
@@ -176,12 +175,12 @@ func TestMapSections(t *testing.T) {
 		}
 		t.Run(strings.ToLower(fi.Name()), func(t *testing.T) {
 			f, err := ifs.Open(fname)
-			require.NoError(t, err)
+			must.NoError(t, err)
 			defer f.Close()
 			rd, err := maps.NewReader(f)
-			require.NoError(t, err)
+			must.NoError(t, err)
 			sect, err := rd.ReadSectionsRaw()
-			require.NoError(t, err)
+			must.NoError(t, err)
 			for _, s := range sect {
 				if !s.Supported() {
 					t.Logf("skip section: %q", s.Name)
@@ -189,11 +188,11 @@ func TestMapSections(t *testing.T) {
 				}
 				t.Run(s.Name, func(t *testing.T) {
 					d, err := s.Decode()
-					require.NoError(t, err)
+					must.NoError(t, err)
 					//t.Logf("%#v", d)
 					data, err := d.MarshalBinary()
-					require.NoError(t, err)
-					require.Equal(t, s.Data, data, "%q", s.Data)
+					must.NoError(t, err)
+					must.Eq(t, s.Data, data, must.Sprintf("%q", s.Data))
 				})
 			}
 		})
@@ -203,7 +202,7 @@ func TestMapSections(t *testing.T) {
 func TestMapWrite(t *testing.T) {
 	path := noxtest.DataPath(t, maps.Dir)
 	list, err := os.ReadDir(path)
-	require.NoError(t, err)
+	must.NoError(t, err)
 	for _, fi := range list {
 		if !fi.IsDir() {
 			continue
@@ -214,27 +213,27 @@ func TestMapWrite(t *testing.T) {
 		}
 		t.Run(strings.ToLower(fi.Name()), func(t *testing.T) {
 			f, err := ifs.Open(fname)
-			require.NoError(t, err)
+			must.NoError(t, err)
 			defer f.Close()
 
 			var exp bytes.Buffer
 
 			rd, err := maps.NewReader(io.TeeReader(f, &exp))
-			require.NoError(t, err)
+			must.NoError(t, err)
 			sect, err := rd.ReadSectionsRaw()
-			require.NoError(t, err)
+			must.NoError(t, err)
 			t.Logf("map crc: 0x%x", rd.Map().CRC())
 
 			var got buffer
 			wr, err := maps.NewWriter(&got, rd.Header())
-			require.NoError(t, err)
+			must.NoError(t, err)
 			err = wr.WriteRawSections(sect)
-			require.NoError(t, err)
+			must.NoError(t, err)
 			err = wr.Close()
-			require.NoError(t, err)
+			must.NoError(t, err)
 			if bexp, bgot := exp.Bytes(), got.Bytes(); !bytes.Equal(bexp, bgot) {
-				require.Equal(t, decodeMapBytes(bexp), decodeMapBytes(bgot))
-				require.Equal(t, bexp, bgot)
+				must.Eq(t, decodeMapBytes(bexp), decodeMapBytes(bgot))
+				must.Eq(t, bexp, bgot)
 			}
 		})
 	}

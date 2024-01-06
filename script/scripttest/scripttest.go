@@ -1,7 +1,10 @@
 package scripttest
 
 import (
+	"bytes"
+	"fmt"
 	"image"
+	"io"
 	"testing"
 	"time"
 
@@ -107,101 +110,106 @@ func (v *Object) Delete() {
 type testPrinter struct {
 	t   testing.TB
 	lvl string
+	w   io.Writer
 }
 
 func (p testPrinter) Print(text string) {
+	if p.w != nil {
+		fmt.Fprintf(p.w, "%s: %s", p.lvl, text)
+	}
 	p.t.Logf("%s: %s", p.lvl, text)
 }
 
 type Game struct {
-	T testing.TB
+	T   testing.TB
+	Log bytes.Buffer
 }
 
-func (g Game) BlindPlayers(blind bool) {
+func (g *Game) BlindPlayers(blind bool) {
 	panic("implement me")
 }
 
-func (g Game) CinemaPlayers(v bool) {
+func (g *Game) CinemaPlayers(v bool) {
 	panic("implement me")
 }
 
-func (g Game) OnPlayerJoin(fnc func(p script.Player)) {
+func (g *Game) OnPlayerJoin(fnc func(p script.Player)) {
 	panic("implement me")
 }
 
-func (g Game) OnPlayerLeave(fnc func(p script.Player)) {
+func (g *Game) OnPlayerLeave(fnc func(p script.Player)) {
 	panic("implement me")
 }
 
-func (g Game) ObjectGroupByID(id string) *script.ObjectGroup {
+func (g *Game) ObjectGroupByID(id string) *script.ObjectGroup {
 	panic("implement me")
 }
 
-func (g Game) WaypointGroupByID(id string) *script.WaypointGroup {
+func (g *Game) WaypointGroupByID(id string) *script.WaypointGroup {
 	panic("implement me")
 }
 
-func (g Game) WallAt(pos types.Pointf) script.Wall {
+func (g *Game) WallAt(pos types.Pointf) script.Wall {
 	panic("implement me")
 }
 
-func (g Game) WallNear(pos types.Pointf) script.Wall {
+func (g *Game) WallNear(pos types.Pointf) script.Wall {
 	panic("implement me")
 }
 
-func (g Game) WallAtGrid(pos image.Point) script.Wall {
+func (g *Game) WallAtGrid(pos image.Point) script.Wall {
 	panic("implement me")
 }
 
-func (g Game) WallGroupByID(id string) *script.WallGroup {
+func (g *Game) WallGroupByID(id string) *script.WallGroup {
 	panic("implement me")
 }
 
-func (g Game) Console(error bool) script.Printer {
+func (g *Game) Console(error bool) script.Printer {
 	lvl := "info"
 	if error {
 		lvl = "error"
 	}
-	return testPrinter{t: g.T, lvl: lvl}
+	return testPrinter{t: g.T, lvl: lvl, w: &g.Log}
 }
 
-func (g Game) Frame() int {
+func (g *Game) Frame() int {
 	return 1
 }
 
-func (g Game) Time() time.Duration {
+func (g *Game) Time() time.Duration {
 	return time.Second
 }
 
-func (g Game) Players() []script.Player {
+func (g *Game) Players() []script.Player {
 	panic("implement me")
 }
 
-func (g Game) HostPlayer() script.Player {
+func (g *Game) HostPlayer() script.Player {
 	panic("implement me")
 }
 
-func (g Game) WaypointByID(id string) script.Waypoint {
+func (g *Game) WaypointByID(id string) script.Waypoint {
 	panic("implement me")
 }
 
-func (g Game) WallByPos(pos image.Point) script.Wall {
+func (g *Game) WallByPos(pos image.Point) script.Wall {
 	panic("implement me")
 }
 
-func (g Game) AudioEffect(name string, pos script.Positioner) {
+func (g *Game) AudioEffect(name string, pos script.Positioner) {
 	panic("implement me")
 }
 
-func (g Game) Global() script.Printer {
+func (g *Game) Global() script.Printer {
 	return testPrinter{t: g.T, lvl: "global"}
 }
 
-func (g Game) ObjectTypeByID(id string) script.ObjectType {
+func (g *Game) ObjectTypeByID(id string) script.ObjectType {
 	return nil
 }
 
-func (g Game) ObjectByID(id string) script.Object {
+func (g *Game) ObjectByID(id string) script.Object {
 	switch id {
 	case "Frog":
 		return &Object{PosVal: types.Pointf{1, 2}, IDVal: id}

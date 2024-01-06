@@ -3,7 +3,7 @@ package mapv0_test
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/shoenig/test/must"
 
 	"github.com/noxworld-dev/opennox-lib/script"
 	"github.com/noxworld-dev/opennox-lib/types"
@@ -121,8 +121,8 @@ func TestWaypointSetPos(t *testing.T) {
 	v2.x = v2.x + 1
 	v2.y = v2.y + 2
 `)
-	require.Equal(t, types.Pointf{X: 3, Y: 4}, obj1.pos)
-	require.Equal(t, types.Pointf{X: 8, Y: 10}, obj2.pos)
+	must.EqOp(t, types.Pointf{X: 3, Y: 4}, obj1.pos)
+	must.EqOp(t, types.Pointf{X: 8, Y: 10}, obj2.pos)
 }
 
 func TestWaypointEnabled(t *testing.T) {
@@ -142,12 +142,12 @@ func TestWaypointEnabled(t *testing.T) {
 		error("not disabled")
 	end
 `)
-	require.False(t, v.enabled)
+	must.False(t, v.enabled)
 
 	g.Exec(`
 	v.enabled = not v.enabled
 `)
-	require.True(t, v.enabled)
+	must.True(t, v.enabled)
 }
 
 func TestWaypointToggle(t *testing.T) {
@@ -167,10 +167,10 @@ func TestWaypointToggle(t *testing.T) {
 		error("not disabled")
 	end
 `)
-	require.False(t, v.enabled)
+	must.False(t, v.enabled)
 
 	g.Exec(`
 	v:Toggle()
 `)
-	require.True(t, v.enabled)
+	must.True(t, v.enabled)
 }

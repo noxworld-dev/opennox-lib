@@ -3,10 +3,10 @@ package console
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/shoenig/test/must"
 )
 
 func TestDecodeSecretToken(t *testing.T) {
 	got := EncodeSecret("racoiaws")
-	require.Equal(t, "0YAKikQs", got)
+	must.EqOp(t, "0YAKikQs", got)
 }

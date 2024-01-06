@@ -9,27 +9,27 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/shoenig/test/must"
 )
 
 func TestNormalize(t *testing.T) {
 	dir, err := os.MkdirTemp("", "nox_fs_")
-	require.NoError(t, err)
+	must.NoError(t, err)
 	defer os.RemoveAll(dir)
 
 	dir1 := filepath.Join(dir, "AbC", "def")
 	err = os.MkdirAll(dir1, 0755)
-	require.NoError(t, err)
+	must.NoError(t, err)
 	file1 := filepath.Join(dir1, "File.txt")
 
 	err = os.WriteFile(file1, []byte("data"), 0644)
-	require.NoError(t, err)
+	must.NoError(t, err)
 
-	require.Equal(t,
+	must.EqOp(t,
 		file1,
 		Normalize(strings.Join([]string{dir, "abc", "Def", "FILE.TXT"}, "\\")),
 	)
-	require.Equal(t,
+	must.EqOp(t,
 		filepath.Join(dir1, "NotExistent"),
 		Normalize(strings.Join([]string{dir, "ABC", "DeF", "NotExistent"}, "\\")),
 	)

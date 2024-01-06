@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/shoenig/test/must"
 
 	"github.com/noxworld-dev/opennox-lib/ifs"
 	"github.com/noxworld-dev/opennox-lib/noxtest"
@@ -60,23 +60,23 @@ func TestIsAllowedFile(t *testing.T) {
 
 func copyFile(t testing.TB, dst, src string) {
 	s, err := ifs.Open(src)
-	require.NoError(t, err)
+	must.NoError(t, err)
 	defer s.Close()
 	d, err := os.Create(dst)
-	require.NoError(t, err)
+	must.NoError(t, err)
 	defer d.Close()
 	_, err = io.Copy(d, s)
-	require.NoError(t, err)
+	must.NoError(t, err)
 	err = d.Close()
-	require.NoError(t, err)
+	must.NoError(t, err)
 }
 
 func TestMapServer(t *testing.T) {
 	dpath := noxtest.DataPath(t, "maps")
 	srcdir, err := os.MkdirTemp("", "opennox-map-test-src-*")
-	require.NoError(t, err)
+	must.NoError(t, err)
 	dstdir, err := os.MkdirTemp("", "opennox-map-test-dst-*")
-	require.NoError(t, err)
+	must.NoError(t, err)
 	t.Cleanup(func() {
 		_ = os.RemoveAll(srcdir)
 		_ = os.RemoveAll(dstdir)
@@ -90,7 +90,7 @@ func TestMapServer(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			// Copy a well-known map to a source folder.
 			err = os.MkdirAll(filepath.Join(srcdir, name), 0755)
-			require.NoError(t, err)
+			must.NoError(t, err)
 			smpath := filepath.Join(srcdir, name, name+".map")
 			copyFile(t, smpath, filepath.Join(dpath, mname, mname+".map"))
 
@@ -98,7 +98,7 @@ func TestMapServer(t *testing.T) {
 			srv := NewServer(srcdir)
 			hsrv := &http.Server{Handler: srv}
 			l, err := net.Listen("tcp", ":0")
-			require.NoError(t, err)
+			must.NoError(t, err)
 			t.Cleanup(func() {
 				_ = l.Close()
 			})
@@ -108,7 +108,7 @@ func TestMapServer(t *testing.T) {
 				if err == http.ErrServerClosed {
 					return
 				}
-				require.NoError(t, err)
+				must.NoError(t, err)
 			}()
 			t.Cleanup(func() {
 				_ = hsrv.Close()
@@ -116,11 +116,11 @@ func TestMapServer(t *testing.T) {
 
 			ctx := context.Background()
 			cli, err := NewClient(ctx, l.Addr().String())
-			require.NoError(t, err)
+			must.NoError(t, err)
 			defer cli.Close()
 
 			err = cli.DownloadMap(ctx, dstdir, name)
-			require.NoError(t, err)
+			must.NoError(t, err)
 		})
 	}
 }

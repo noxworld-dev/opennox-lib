@@ -10,7 +10,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/shoenig/test/must"
 
 	"github.com/noxworld-dev/opennox-lib/datapath"
 )
@@ -25,14 +25,14 @@ func DataPath(t testing.TB, sub ...string) string {
 
 func WritePNG(t testing.TB, path string, img image.Image, exp string) {
 	f, err := os.Create(path)
-	require.NoError(t, err)
+	must.NoError(t, err)
 	defer f.Close()
 	h := md5.New()
 	err = png.Encode(io.MultiWriter(f, h), img)
-	require.NoError(t, err)
+	must.NoError(t, err)
 	got := hex.EncodeToString(h.Sum(nil))
 	if exp != "" {
-		require.Equal(t, exp, got)
+		must.EqOp(t, exp, got)
 	} else {
 		t.Logf("%s: %s", path, got)
 	}

@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
+	"github.com/shoenig/test/must"
 	glua "github.com/yuin/gopher-lua"
 
 	"github.com/noxworld-dev/opennox-lib/script"
@@ -53,5 +53,5 @@ func (g *testGame) Time() time.Duration {
 
 func (g *testGame) Exec(s string) {
 	_, err := g.vm.Exec(s)
-	require.NoError(g.t, err)
+	must.NoError(g.t, err)
 }

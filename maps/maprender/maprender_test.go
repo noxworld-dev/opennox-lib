@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/shoenig/test/must"
 
 	"github.com/noxworld-dev/opennox-lib/maps"
 	"github.com/noxworld-dev/opennox-lib/noxtest"
@@ -23,16 +23,16 @@ var casesMapDraw = []struct {
 
 func TestDraw(t *testing.T) {
 	r, err := NewRenderer(noxtest.DataPath(t))
-	require.NoError(t, err)
+	must.NoError(t, err)
 	defer r.Close()
 	path := noxtest.DataPath(t, maps.Dir)
 	for _, m := range casesMapDraw {
 		t.Run(m.Name, func(t *testing.T) {
 			mp, err := maps.ReadMap(filepath.Join(path, m.Name))
-			require.NoError(t, err)
+			must.NoError(t, err)
 			img, err := r.DrawMap(mp, nil)
 			noxtest.WritePNG(t, m.Name+".png", img, m.Hash)
-			require.NoError(t, err)
+			must.NoError(t, err)
 		})
 	}
 }
@@ -40,14 +40,14 @@ func TestDraw(t *testing.T) {
 func BenchmarkDraw(b *testing.B) {
 	b.ReportAllocs()
 	r, err := NewRenderer(noxtest.DataPath(b))
-	require.NoError(b, err)
+	must.NoError(b, err)
 	defer r.Close()
 	path := noxtest.DataPath(b, maps.Dir)
 	b.StopTimer()
 	for _, m := range casesMapDraw {
 		b.Run(m.Name, func(b *testing.B) {
 			mp, err := maps.ReadMap(filepath.Join(path, m.Name))
-			require.NoError(b, err)
+			must.NoError(b, err)
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
 				_, _ = r.DrawMap(mp, nil)

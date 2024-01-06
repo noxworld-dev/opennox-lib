@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/shoenig/test/must"
 
 	"github.com/noxworld-dev/opennox-lib/script"
 	"github.com/noxworld-dev/opennox-lib/types"
@@ -297,8 +297,8 @@ func TestObjectSetPos(t *testing.T) {
 	v2.x = v2.x + 1
 	v2.y = v2.y + 2
 `)
-	require.Equal(t, types.Pointf{X: 3, Y: 4}, obj1.pos)
-	require.Equal(t, types.Pointf{X: 8, Y: 10}, obj2.pos)
+	must.EqOp(t, types.Pointf{X: 3, Y: 4}, obj1.pos)
+	must.EqOp(t, types.Pointf{X: 8, Y: 10}, obj2.pos)
 }
 
 func TestObjectDelete(t *testing.T) {
@@ -309,7 +309,7 @@ func TestObjectDelete(t *testing.T) {
 	local v = Nox.Object("Test")
 	v:Delete()
 `)
-	require.True(t, v.deleted)
+	must.True(t, v.deleted)
 }
 
 func TestObjectDestroy(t *testing.T) {
@@ -320,19 +320,19 @@ func TestObjectDestroy(t *testing.T) {
 	v = Nox.Object("Test")
 	v:Destroy()
 `)
-	require.True(t, v.dead)
+	must.True(t, v.dead)
 	v.dead = false
 
 	g.Exec(`
 	v:Break()
 `)
-	require.True(t, v.dead)
+	must.True(t, v.dead)
 	v.dead = false
 
 	g.Exec(`
 	v:Kill()
 `)
-	require.True(t, v.dead)
+	must.True(t, v.dead)
 	v.dead = false
 }
 
@@ -353,12 +353,12 @@ func TestObjectEnabled(t *testing.T) {
 		error("not disabled")
 	end
 `)
-	require.False(t, v.enabled)
+	must.False(t, v.enabled)
 
 	g.Exec(`
 	v.enabled = not v.enabled
 `)
-	require.True(t, v.enabled)
+	must.True(t, v.enabled)
 }
 
 func TestObjectToggle(t *testing.T) {
@@ -378,12 +378,12 @@ func TestObjectToggle(t *testing.T) {
 		error("not disabled")
 	end
 `)
-	require.False(t, v.enabled)
+	must.False(t, v.enabled)
 
 	g.Exec(`
 	v:Toggle()
 `)
-	require.True(t, v.enabled)
+	must.True(t, v.enabled)
 }
 
 func TestObjectOwner(t *testing.T) {
@@ -395,29 +395,29 @@ func TestObjectOwner(t *testing.T) {
 	v1 = Nox.Object("Test")
 	v2 = Nox.Object("Test2"):SetOwner(v1)
 `)
-	require.Equal(t, obj1, obj2.owner)
+	must.Eq[script.Object](t, obj1, obj2.owner)
 
 	g.Exec(`
 	v2:SetOwner(nil)
 `)
-	require.Nil(t, obj2.owner)
+	must.Eq(t, nil, obj2.owner)
 
 	g.Exec(`
 	v2.owner = v1
 `)
-	require.Equal(t, obj1, obj2.owner)
+	must.Eq[script.Object](t, obj1, obj2.owner)
 
 	g.Exec(`
 	v2.owner = nil
 `)
-	require.Nil(t, obj2.owner)
+	must.Eq(t, nil, obj2.owner)
 
 	g.Exec(`
 	v2.owner = v1
 	v1.owner = v2.owner
 `)
-	require.Equal(t, obj1, obj2.owner)
-	require.Equal(t, obj1, obj1.owner)
+	must.Eq[script.Object](t, obj1, obj2.owner)
+	must.Eq[script.Object](t, obj1, obj1.owner)
 }
 
 // TODO: test object groups

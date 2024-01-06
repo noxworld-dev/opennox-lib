@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/shoenig/test/must"
 
 	"github.com/noxworld-dev/opennox-lib/noxtest"
 )
@@ -23,16 +23,16 @@ func TestParseConfig(t *testing.T) {
 			if os.IsNotExist(err) {
 				t.SkipNow()
 			}
-			require.NoError(t, err)
+			must.NoError(t, err)
 			data = bytes.ReplaceAll(data, []byte("\r\n"), []byte("\n"))
 
 			file, err := Parse(bytes.NewReader(data))
-			require.NoError(t, err)
-			require.Len(t, file.Sections, 2)
+			must.NoError(t, err)
+			must.SliceLen(t, 2, file.Sections)
 			vers, _ := file.Sections[0].Get("Version")
-			require.NotZero(t, vers)
+			must.NotEqOp(t, "", vers)
 			mouse, _ := file.Sections[1].Get("MousePickup")
-			require.NotZero(t, mouse)
+			must.NotEqOp(t, "", mouse)
 		})
 	}
 }
@@ -148,19 +148,19 @@ func TestConfig(t *testing.T) {
 		c := c
 		t.Run(c.name, func(t *testing.T) {
 			file, err := Parse(strings.NewReader(c.text))
-			require.NoError(t, err)
-			require.Equal(t, &File{
+			must.NoError(t, err)
+			must.Eq(t, &File{
 				Sections: c.file,
 			}, file)
 
 			var buf bytes.Buffer
 			err = file.WriteTo(&buf)
-			require.NoError(t, err)
+			must.NoError(t, err)
 			exp := c.text
 			if c.exp != "" {
 				exp = c.exp
 			}
-			require.Equal(t, exp, buf.String())
+			must.EqOp(t, exp, buf.String())
 		})
 	}
 }
@@ -175,8 +175,8 @@ I+M = ToggleInventory
 ---
 `
 	file, err := Parse(strings.NewReader(conf))
-	require.NoError(t, err)
-	require.Equal(t, &File{
+	must.NoError(t, err)
+	must.Eq(t, &File{
 		Sections: []Section{
 			{
 				{Key: "Version", Value: "65537"},
@@ -191,14 +191,14 @@ I+M = ToggleInventory
 
 	var buf bytes.Buffer
 	err = file.WriteTo(&buf)
-	require.NoError(t, err)
-	require.Equal(t, conf, buf.String())
+	must.NoError(t, err)
+	must.EqOp(t, conf, buf.String())
 
 	buf.Reset()
 	file.Sections[0].Set("ServerName", "Test")
 	err = file.WriteTo(&buf)
-	require.NoError(t, err)
-	require.Equal(t, `Version = 65537
+	must.NoError(t, err)
+	must.EqOp(t, `Version = 65537
 # comment
 VideoMode = 1024 768 16
 ServerName = Test

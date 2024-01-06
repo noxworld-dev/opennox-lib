@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/shoenig/test/must"
 
 	"github.com/noxworld-dev/opennox-lib/maps"
 	"github.com/noxworld-dev/opennox-lib/maps/maprender"
@@ -25,13 +25,13 @@ var casesMapDraw = []struct {
 
 func TestDraw(t *testing.T) {
 	r, err := maprender.NewRenderer(noxtest.DataPath(t))
-	require.NoError(t, err)
+	must.NoError(t, err)
 	defer r.Close()
 	path := noxtest.DataPath(t, maps.Dir)
 	for _, m := range casesMapDraw {
 		t.Run(m.Name, func(t *testing.T) {
 			mp, err := maps.ReadMap(filepath.Join(path, m.Name))
-			require.NoError(t, err)
+			must.NoError(t, err)
 			img := MinimapRGBA(mp, color.Black)
 			noxtest.WritePNG(t, m.Name+".png", img, m.Hash)
 		})

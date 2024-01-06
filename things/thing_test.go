@@ -3,10 +3,10 @@ package things
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/shoenig/test/must"
 )
 
 func TestThingFixAttrs(t *testing.T) {
 	arr := fixThingAttrs("MASS = 6  DESTROY = DefaultDestroy")
-	require.Equal(t, []string{"MASS = 6", "DESTROY = DefaultDestroy"}, arr)
+	must.Eq(t, []string{"MASS = 6", "DESTROY = DefaultDestroy"}, arr)
 }

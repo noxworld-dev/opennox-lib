@@ -3,7 +3,7 @@ package mapv0_test
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/shoenig/test/must"
 )
 
 func TestFrameTimer(t *testing.T) {
@@ -16,9 +16,9 @@ func TestFrameTimer(t *testing.T) {
 	end
 	Nox.FrameTimer(1, foo)
 `)
-	require.Equal(t, float32(0), v.pos.X)
+	must.EqOp(t, float32(0), v.pos.X)
 	g.Tick()
-	require.Equal(t, float32(1), v.pos.X)
+	must.EqOp(t, float32(1), v.pos.X)
 }
 
 func TestFrameTimerStop(t *testing.T) {
@@ -31,14 +31,14 @@ func TestFrameTimerStop(t *testing.T) {
 	end
 	t = Nox.FrameTimer(1, foo)
 `)
-	require.Equal(t, float32(0), v.pos.X)
+	must.EqOp(t, float32(0), v.pos.X)
 	g.Exec(`
 	t:Stop()
 `)
 	for i := 0; i < 3; i++ {
 		g.Tick()
 	}
-	require.Equal(t, float32(0), v.pos.X)
+	must.EqOp(t, float32(0), v.pos.X)
 }
 
 func TestFrameTimerAlt(t *testing.T) {
@@ -51,9 +51,9 @@ func TestFrameTimerAlt(t *testing.T) {
 	end
 	Nox.Timer(Nox.Frames(1), foo)
 `)
-	require.Equal(t, float32(0), v.pos.X)
+	must.EqOp(t, float32(0), v.pos.X)
 	g.Tick()
-	require.Equal(t, float32(1), v.pos.X)
+	must.EqOp(t, float32(1), v.pos.X)
 }
 
 func TestFrameTimerArg(t *testing.T) {
@@ -66,9 +66,9 @@ func TestFrameTimerArg(t *testing.T) {
 	end
 	Nox.FrameTimer(1, foo, v, 2)
 `)
-	require.Equal(t, float32(0), v.pos.X)
+	must.EqOp(t, float32(0), v.pos.X)
 	g.Tick()
-	require.Equal(t, float32(2), v.pos.X)
+	must.EqOp(t, float32(2), v.pos.X)
 }
 
 func TestFrameTimerAltArg(t *testing.T) {
@@ -81,9 +81,9 @@ func TestFrameTimerAltArg(t *testing.T) {
 	end
 	Nox.Timer(Nox.Frames(1), foo, v, 2)
 `)
-	require.Equal(t, float32(0), v.pos.X)
+	must.EqOp(t, float32(0), v.pos.X)
 	g.Tick()
-	require.Equal(t, float32(2), v.pos.X)
+	must.EqOp(t, float32(2), v.pos.X)
 }
 
 func TestSecondTimer(t *testing.T) {
@@ -96,11 +96,11 @@ func TestSecondTimer(t *testing.T) {
 	end
 	Nox.SecondTimer(1, foo)
 `)
-	require.Equal(t, float32(0), v.pos.X)
+	must.EqOp(t, float32(0), v.pos.X)
 	for i := 0; i < 31; i++ {
 		g.Tick()
 	}
-	require.Equal(t, float32(1), v.pos.X)
+	must.EqOp(t, float32(1), v.pos.X)
 }
 
 func TestSecondTimerStop(t *testing.T) {
@@ -113,14 +113,14 @@ func TestSecondTimerStop(t *testing.T) {
 	end
 	t = Nox.SecondTimer(1, foo)
 `)
-	require.Equal(t, float32(0), v.pos.X)
+	must.EqOp(t, float32(0), v.pos.X)
 	g.Exec(`
 	t:Stop()
 `)
 	for i := 0; i < 31*2; i++ {
 		g.Tick()
 	}
-	require.Equal(t, float32(0), v.pos.X)
+	must.EqOp(t, float32(0), v.pos.X)
 }
 
 func TestSecondTimerAlt(t *testing.T) {
@@ -133,11 +133,11 @@ func TestSecondTimerAlt(t *testing.T) {
 	end
 	Nox.Timer(Nox.Sec(1), foo)
 `)
-	require.Equal(t, float32(0), v.pos.X)
+	must.EqOp(t, float32(0), v.pos.X)
 	for i := 0; i < 31; i++ {
 		g.Tick()
 	}
-	require.Equal(t, float32(1), v.pos.X)
+	must.EqOp(t, float32(1), v.pos.X)
 }
 
 func TestSecondTimerArg(t *testing.T) {
@@ -150,11 +150,11 @@ func TestSecondTimerArg(t *testing.T) {
 	end
 	Nox.SecondTimer(1, foo, v, 2)
 `)
-	require.Equal(t, float32(0), v.pos.X)
+	must.EqOp(t, float32(0), v.pos.X)
 	for i := 0; i < 31; i++ {
 		g.Tick()
 	}
-	require.Equal(t, float32(2), v.pos.X)
+	must.EqOp(t, float32(2), v.pos.X)
 }
 
 func TestSecondTimerAltArg(t *testing.T) {
@@ -167,9 +167,9 @@ func TestSecondTimerAltArg(t *testing.T) {
 	end
 	Nox.Timer(Nox.Sec(1), foo, v, 2)
 `)
-	require.Equal(t, float32(0), v.pos.X)
+	must.EqOp(t, float32(0), v.pos.X)
 	for i := 0; i < 31; i++ {
 		g.Tick()
 	}
-	require.Equal(t, float32(2), v.pos.X)
+	must.EqOp(t, float32(2), v.pos.X)
 }

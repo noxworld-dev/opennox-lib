@@ -7,7 +7,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/shoenig/test/must"
 
 	"github.com/noxworld-dev/opennox-lib/noxtest"
 )
@@ -26,13 +26,13 @@ func TestDecodePalette(t *testing.T) {
 	path := noxtest.DataPath(t, "default.pal")
 
 	f, err := os.Open(path)
-	require.NoError(t, err)
+	must.NoError(t, err)
 	defer f.Close()
 
 	pal, err := DecodePalette(f)
-	require.NoError(t, err)
+	must.NoError(t, err)
 	writePNG(t, "default.png", newPaletteImage(pal))
-	require.Equal(t, DefaultPalette(), pal, "\n%#v", pal)
+	must.Eq(t, DefaultPalette(), pal, must.Sprintf("\n%#v", pal))
 }
 
 func TestPlaceholderPalette(t *testing.T) {
