@@ -1,8 +1,6 @@
 github.com/cpuguy83/go-md2man/v2 v2.0.2/go.mod h1:tgQtvFlXSQOSOSIRvRPT7W67SCa46tRHOmNcaadrF8o=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/dennwc/yaegi v0.14.4-0.20230902105020-22e112bbf6e8 h1:P9jSJ3tuBZA0ZVljCc5y6ONgvSEfl3ekgiqqE9qW+kg=
-github.com/dennwc/yaegi v0.14.4-0.20230902105020-22e112bbf6e8/go.mod h1:pkOs3wa7+hKuTCqPav6dNWzfV5G5ZYK5hl5F9xBHp6I=
 github.com/go-gl/gl v0.0.0-20211210172815-726fda9656d6 h1:zDw5v7qm4yH7N8C8uWd+8Ii9rROdgWxQuGoJ9WDXxfk=
 github.com/go-gl/gl v0.0.0-20211210172815-726fda9656d6/go.mod h1:9YTyiznxEY1fVinfM7RvRcjRHbw2xLBJ3AAGIT0I4Nw=
 github.com/go-gl/glfw/v3.3/glfw v0.0.0-20221017161538-93cebf72946b h1:GgabKamyOYguHqHjSkDACcgoPIz3w0Dis/zJ1wyHHHU=
@@ -40,6 +38,8 @@ github.com/spf13/pflag v1.0.5 h1:iy+VFUOCP1a+8yFto/drg2CJ5u0yRoB7fZw3DKv/JXA=
 github.com/spf13/pflag v1.0.5/go.mod h1:McXfInJRrz4CZXVZOBLb0bTZqETkiAhM9Iw0y3An2Bg=
 github.com/stretchr/testify v1.8.4 h1:CcVxjf3Q8PM0mHUKJCdn+eZZtm5yQwehR5yeSVQQcUk=
 github.com/stretchr/testify v1.8.4/go.mod h1:sz/lmYIOXD/1dqDmKjjqLyZ2RngseejIcXlSw2iwfAo=
+github.com/traefik/yaegi v0.15.2-0.20230926222205-da27c4fbc25f h1:Yi+MoOxWyVWkyq3q+TAyZVgxVXsD9HE1PvMbip0MbAo=
+github.com/traefik/yaegi v0.15.2-0.20230926222205-da27c4fbc25f/go.mod h1:pkOs3wa7+hKuTCqPav6dNWzfV5G5ZYK5hl5F9xBHp6I=
 github.com/veandco/go-sdl2 v0.5.0-alpha.4 h1:+XyPktayFrjYA6n3qUWiQDw6jOVJye27q8gmXvnYAHQ=
 github.com/veandco/go-sdl2 v0.5.0-alpha.4/go.mod h1:OROqMhHD43nT4/i9crJukyVecjPNYYuCofep6SNiAjY=
 github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=

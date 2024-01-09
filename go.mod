@@ -15,7 +15,7 @@ require (
 	github.com/noxworld-dev/noxscript/ns/v4 v4.14.0
 	github.com/shoenig/test v1.7.0
 	github.com/spf13/cobra v1.7.0
-	github.com/traefik/yaegi v0.15.1
+	github.com/traefik/yaegi v0.15.2-0.20230926222205-da27c4fbc25f
 	github.com/veandco/go-sdl2 v0.5.0-alpha.4
 	github.com/yuin/gopher-lua v0.0.0-20220504180219-658193537a64
 	golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa
@@ -31,5 +31,3 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	golang.org/x/crypto v0.12.0 // indirect
 )
-
-replace github.com/traefik/yaegi => github.com/dennwc/yaegi v0.14.4-0.20230902105020-22e112bbf6e8
