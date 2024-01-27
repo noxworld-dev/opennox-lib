@@ -15,10 +15,15 @@ func allZeros(data []byte) bool {
 	return true
 }
 
-func cString(data []byte) string {
+func cLen(data []byte) int {
 	if i := bytes.IndexByte(data, 0); i >= 0 {
-		data = data[:i]
+		return i
 	}
+	return len(data)
+}
+
+func cString(data []byte) string {
+	data = data[:cLen(data)]
 	return string(data)
 }
 
@@ -31,6 +36,16 @@ func cStringSet0(data []byte, s string) {
 func cStringSet(data []byte, s string) int {
 	zeros(data)
 	return copy(data, s)
+}
+
+func cLen16(data []byte) int {
+	for i := 0; i < len(data)/2; i++ {
+		v := binary.LittleEndian.Uint16(data[2*i:])
+		if v == 0 {
+			return i
+		}
+	}
+	return len(data)
 }
 
 func cString16(data []byte) string {
@@ -57,5 +72,26 @@ func cStringSet16(data []byte, s string) {
 func zeros(data []byte) {
 	for i := range data {
 		data[i] = 0
+	}
+}
+
+type FixedString struct {
+	Value string
+	Junk  []byte
+}
+
+func (s *FixedString) Encode(data []byte) {
+	i := cStringSet(data, s.Value)
+	if len(s.Junk) != 0 {
+		copy(data[i+1:], s.Junk)
+	}
+}
+
+func (s *FixedString) Decode(data []byte) {
+	s.Value = cString(data)
+	s.Junk = nil
+	if i := len(s.Value); !allZeros(data[i+1:]) {
+		s.Junk = make([]byte, len(data)-i-1)
+		copy(s.Junk, data[i+1:])
 	}
 }

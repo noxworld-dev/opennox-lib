@@ -60,6 +60,9 @@ func (m *MsgPlayerInput) Decode(data []byte) (int, error) {
 	data = data[1 : 1+psz]
 	for len(data) > 0 {
 		code := CtrlCode(data[0])
+		if len(data) < 4 {
+			return 0, io.ErrUnexpectedEOF
+		}
 		data = data[4:]
 		var inp PlayerInput
 		switch code.DataSize() {

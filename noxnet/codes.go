@@ -327,7 +327,6 @@ var opLen = map[Op]int{
 	MSG_FX_MANA_BOMB_CANCEL:            4,
 	MSG_AUDIO_EVENT:                    3,
 	MSG_AUDIO_PLAYER_EVENT:             3,
-	MSG_IMPORTANT:                      0,
 	MSG_IMPORTANT_ACK:                  4,
 	MSG_OUTGOING_CLIENT:                2,
 	MSG_GAME_SETTINGS:                  19,
@@ -357,6 +356,7 @@ var opLen = map[Op]int{
 	MSG_RESET_ABILITIES:                1,
 	MSG_RATE_CHANGE:                    1,
 	MSG_STAT_MULTIPLIERS:               16,
+	MSG_IMPORTANT:                      -1,
 	MSG_UPDATE_STREAM:                  -1, // dynamic
 	MSG_TEXT_MESSAGE:                   -1, // dynamic
 	MSG_INFORM:                         -1, // dynamic

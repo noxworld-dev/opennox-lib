@@ -2,8 +2,10 @@ package noxnet
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
+	"math"
 )
 
 func init() {
@@ -33,7 +35,7 @@ type MsgXferStart struct {
 	Act   byte
 	Unk1  byte
 	Size  uint32
-	Type  string
+	Type  FixedString
 	Token byte
 	Unk5  [3]byte
 }
@@ -47,7 +49,16 @@ func (*MsgXferStart) EncodeSize() int {
 }
 
 func (m *MsgXferStart) Encode(data []byte) (int, error) {
-	panic("TODO")
+	if len(data) < 138 {
+		return 0, io.ErrShortBuffer
+	}
+	data[0] = m.Act
+	data[1] = m.Unk1
+	binary.LittleEndian.PutUint32(data[2:6], m.Size)
+	m.Type.Encode(data[6:134])
+	data[134] = m.Token
+	copy(data[135:138], m.Unk5[:])
+	return 138, nil
 }
 
 func (m *MsgXferStart) Decode(data []byte) (int, error) {
@@ -57,7 +68,7 @@ func (m *MsgXferStart) Decode(data []byte) (int, error) {
 	m.Act = data[0]
 	m.Unk1 = data[1]
 	m.Size = binary.LittleEndian.Uint32(data[2:6])
-	m.Type = cString(data[6:134])
+	m.Type.Decode(data[6:134])
 	m.Token = data[134]
 	copy(m.Unk5[:], data[135:138])
 	return 138, nil
@@ -78,7 +89,12 @@ func (*MsgXferState) EncodeSize() int {
 }
 
 func (m *MsgXferState) Encode(data []byte) (int, error) {
-	panic("TODO")
+	if len(data) < 2 {
+		return 0, io.ErrShortBuffer
+	}
+	data[0] = m.Stream
+	data[1] = m.Token
+	return 2, nil
 }
 
 func (m *MsgXferState) Decode(data []byte) (int, error) {
@@ -106,7 +122,18 @@ func (m *MsgXferData) EncodeSize() int {
 }
 
 func (m *MsgXferData) Encode(data []byte) (int, error) {
-	panic("TODO")
+	if len(data) < 6+len(m.Data) {
+		return 0, io.ErrShortBuffer
+	}
+	if len(m.Data) > math.MaxUint16 {
+		return 0, errors.New("xfer packet too large")
+	}
+	data[0] = m.Stream
+	data[1] = m.Token
+	binary.LittleEndian.PutUint16(data[2:4], m.Chunk)
+	binary.LittleEndian.PutUint16(data[4:6], uint16(len(m.Data)))
+	copy(data[6:], m.Data)
+	return 6 + len(m.Data), nil
 }
 
 func (m *MsgXferData) Decode(data []byte) (int, error) {
@@ -117,11 +144,12 @@ func (m *MsgXferData) Decode(data []byte) (int, error) {
 	m.Token = data[1]
 	m.Chunk = binary.LittleEndian.Uint16(data[2:4])
 	sz := int(binary.LittleEndian.Uint16(data[4:6]))
-	if sz < 0 || sz > len(data[6:]) {
+	data = data[6:]
+	if sz > len(data) {
 		return 0, io.ErrUnexpectedEOF
 	}
 	m.Data = make([]byte, sz)
-	copy(m.Data, data[6:6+sz])
+	copy(m.Data, data[:sz])
 	return 6 + sz, nil
 }
 
@@ -140,7 +168,13 @@ func (*MsgXferAck) EncodeSize() int {
 }
 
 func (m *MsgXferAck) Encode(data []byte) (int, error) {
-	panic("TODO")
+	if len(data) < 4 {
+		return 0, io.ErrShortBuffer
+	}
+	data[0] = m.Stream
+	data[1] = m.Token
+	binary.LittleEndian.PutUint16(data[2:4], m.Chunk)
+	return 4, nil
 }
 
 func (m *MsgXferAck) Decode(data []byte) (int, error) {
@@ -166,7 +200,11 @@ func (*MsgXferClose) EncodeSize() int {
 }
 
 func (m *MsgXferClose) Encode(data []byte) (int, error) {
-	panic("TODO")
+	if len(data) < 1 {
+		return 0, io.ErrShortBuffer
+	}
+	data[0] = m.Stream
+	return 1, nil
 }
 
 func (m *MsgXferClose) Decode(data []byte) (int, error) {

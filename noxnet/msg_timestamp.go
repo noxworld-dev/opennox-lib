@@ -8,6 +8,20 @@ import (
 func init() {
 	RegisterMessage(&MsgTimestamp{})
 	RegisterMessage(&MsgFullTimestamp{})
+	RegisterMessage(&MsgRateChange{})
+}
+
+func TimestampSet16(ts uint32, v uint16) uint32 {
+	ts16 := uint16(ts & 0xFFFF)
+	overflow := (ts16 >= 0xC000) && (v < 0x4000)
+	if !overflow && v < ts16 {
+		return ts // out of order
+	}
+	ts = (ts & 0xFFFF0000) | uint32(v)
+	if overflow {
+		ts += 0x10000
+	}
+	return ts
 }
 
 type MsgTimestamp struct {
@@ -64,4 +78,32 @@ func (m *MsgFullTimestamp) Decode(data []byte) (int, error) {
 	}
 	m.T = binary.LittleEndian.Uint32(data[:4])
 	return 4, nil
+}
+
+type MsgRateChange struct {
+	Rate byte
+}
+
+func (*MsgRateChange) NetOp() Op {
+	return MSG_RATE_CHANGE
+}
+
+func (*MsgRateChange) EncodeSize() int {
+	return 1
+}
+
+func (p *MsgRateChange) Encode(data []byte) (int, error) {
+	if len(data) < 1 {
+		return 0, io.ErrShortBuffer
+	}
+	data[0] = p.Rate
+	return 1, nil
+}
+
+func (p *MsgRateChange) Decode(data []byte) (int, error) {
+	if len(data) < 1 {
+		return 0, io.ErrUnexpectedEOF
+	}
+	p.Rate = data[0]
+	return 1, nil
 }

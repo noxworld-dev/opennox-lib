@@ -90,10 +90,12 @@ func TestDecodePacket(t *testing.T) {
 		{
 			name: "use map",
 			packet: &MsgUseMap{
-				MapName:     "So_Druid.map",
-				CRC:         0x6765031d,
-				T:           12561,
-				MapNameJunk: []byte{0x9, 0x0, 0x80, 0x96, 0x98, 0x0, 0x0, 0x0, 0x0, 0x0, 0x57, 0xd2, 0x30, 0x14, 0x1, 0x0, 0x0, 0x0, 0x13},
+				MapName: FixedString{
+					Value: "So_Druid.map",
+					Junk:  []byte{0x9, 0x0, 0x80, 0x96, 0x98, 0x0, 0x0, 0x0, 0x0, 0x0, 0x57, 0xd2, 0x30, 0x14, 0x1, 0x0, 0x0, 0x0, 0x13},
+				},
+				CRC: 0x6765031d,
+				T:   12561,
 			},
 		},
 		{
@@ -110,6 +112,129 @@ func TestDecodePacket(t *testing.T) {
 				X: 3103,
 				Y: 2963,
 			},
+		},
+		{
+			name: "text msg global",
+			packet: &MsgText{
+				NetCode: 935,
+				Flags:   TextUTF8,
+				PosX:    1472,
+				PosY:    2370,
+				Size:    13,
+				Dur:     0,
+				Data:    []byte("hello global\x00"),
+			},
+		},
+		{
+			name: "text msg team",
+			packet: &MsgText{
+				NetCode: 935,
+				Flags:   TextUTF8 | TextTeam,
+				PosX:    1472,
+				PosY:    2370,
+				Size:    8,
+				Dur:     0,
+				Data:    []byte("hi team\x00"),
+			},
+		},
+		{
+			name: "text msg payload",
+			packet: &MsgText{
+				NetCode: 0,
+				Flags:   TextUTF8 | TextExt,
+				PosX:    0,
+				PosY:    0,
+				Size:    5,
+				Dur:     0,
+				Data:    []byte("\x001234"),
+			},
+		},
+		{
+			name: "text msg payload 16",
+			packet: &MsgText{
+				NetCode: 0,
+				Flags:   TextExt,
+				PosX:    0,
+				PosY:    0,
+				Size:    5,
+				Dur:     0,
+				Data:    []byte("\x00\x0012345678"),
+			},
+		},
+		{
+			name:   "fade begin",
+			packet: &MsgFadeBegin{Out: 1, Menu: 0},
+		},
+		{
+			name:   "fx jiggle",
+			packet: &MsgFxJiggle{Val: 17},
+		},
+		{
+			name: "map send start",
+			packet: &MsgMapSendStart{
+				Unk1:    [3]byte{0, 0, 0},
+				MapSize: 208134,
+				MapName: FixedString{Value: "_noxtest.map"},
+			},
+		},
+		{
+			name: "map send packet",
+			packet: &MsgMapSendPacket{
+				Unk:   0,
+				Block: 12,
+				Data:  []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+			},
+		},
+		{
+			name: "stat mult",
+			packet: &MsgStatMult{
+				Health:   1.1,
+				Mana:     1.2,
+				Strength: 1.3,
+				Speed:    1.4,
+			},
+		},
+		{
+			name: "xfer start motd",
+			packet: &MsgXfer{&MsgXferStart{
+				Act:   1,
+				Unk1:  0,
+				Size:  376,
+				Type:  FixedString{Value: "MOTD"},
+				Token: 0,
+				Unk5:  [3]byte{0, 0, 0},
+			}},
+		},
+		{
+			name: "xfer accept",
+			packet: &MsgXfer{&MsgXferState{
+				Code:   XferAccept,
+				Token:  0,
+				Stream: 0,
+			}},
+		},
+		{
+			name: "xfer data motd",
+			packet: &MsgXfer{&MsgXferData{
+				Token:  0,
+				Stream: 0,
+				Chunk:  1,
+				Data:   []byte("\r\nWelcome to Nox multiplayer!\r\nVisit www.westwood.com for the latest news and updates.\r\n\r\n--------------\r\n\r\nIf you are hosting a game, select a game type and a map \r\nfrom the menu to the right, then click \"GO!\".\r\n\r\n\r\nTo close this message window, click the \"OK\" button.\r\n\r\n\r\n(You can customize this message by editing the file \r\n'motd.txt' found in your Nox game directory)\r\n\x00"),
+			}},
+		},
+		{
+			name: "xfer ack",
+			packet: &MsgXfer{&MsgXferAck{
+				Token:  0,
+				Stream: 0,
+				Chunk:  1,
+			}},
+		},
+		{
+			name: "xfer close",
+			packet: &MsgXfer{&MsgXferClose{
+				Stream: 0,
+			}},
 		},
 	}
 	for _, c := range cases {
