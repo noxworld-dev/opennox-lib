@@ -3,6 +3,8 @@ package noxnet
 import (
 	"encoding/binary"
 	"io"
+
+	"github.com/noxworld-dev/opennox-lib/binenc"
 )
 
 func init() {
@@ -10,7 +12,7 @@ func init() {
 }
 
 type MsgUseMap struct {
-	MapName FixedString
+	MapName binenc.String
 	CRC     uint32
 	T       uint32
 }

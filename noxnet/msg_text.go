@@ -3,6 +3,8 @@ package noxnet
 import (
 	"encoding/binary"
 	"io"
+
+	"github.com/noxworld-dev/opennox-lib/binenc"
 )
 
 func init() {
@@ -46,24 +48,24 @@ func (p *MsgText) Text() string {
 		if len(data) > sz {
 			data = data[:sz]
 		}
-		return cString(data)
+		return binenc.CString(data)
 	}
 	// UTF-16
 	data, sz := p.Data, 2*int(p.Size)
 	if len(data) > sz {
 		data = data[:sz]
 	}
-	return cString16(data)
+	return binenc.CString16(data)
 }
 
 func (p *MsgText) Payload() []byte {
 	if !p.Flags.Has(TextUTF8) && !p.Flags.Has(TextLocalized) {
-		i := cLen16(p.Data)
+		i := binenc.CLen16(p.Data)
 		if i+2 < len(p.Data) {
 			return p.Data[i+2:]
 		}
 	} else {
-		i := cLen(p.Data)
+		i := binenc.CLen(p.Data)
 		if i+1 < len(p.Data) {
 			return p.Data[i+1:]
 		}

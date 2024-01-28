@@ -5,6 +5,8 @@ import (
 	"errors"
 	"io"
 	"math"
+
+	"github.com/noxworld-dev/opennox-lib/binenc"
 )
 
 func init() {
@@ -17,7 +19,7 @@ func init() {
 type MsgMapSendStart struct {
 	Unk1    [3]byte
 	MapSize uint32
-	MapName FixedString
+	MapName binenc.String
 }
 
 func (*MsgMapSendStart) NetOp() Op {

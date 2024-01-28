@@ -3,6 +3,8 @@ package noxnet
 import (
 	"encoding/binary"
 	"io"
+
+	"github.com/noxworld-dev/opennox-lib/binenc"
 )
 
 func init() {
@@ -71,13 +73,13 @@ func (p *MsgClientAccept) Encode(data []byte) (int, error) {
 	}
 	data[0] = p.Unk0
 	data[1] = p.Unk1
-	cStringSet16(data[2:68], p.PlayerName)
+	binenc.CStringSet16(data[2:68], p.PlayerName)
 	data[68] = p.PlayerClass
 	data[69] = p.IsFemale
 	copy(data[70:99], p.Unk70[:])
 	binary.LittleEndian.PutUint32(data[99:103], p.ScreenWidth)
 	binary.LittleEndian.PutUint32(data[103:107], p.ScreenHeight)
-	cStringSet(data[107:129], p.Serial)
+	binenc.CStringSet(data[107:129], p.Serial)
 	copy(data[129:155], p.Unk129[:])
 	return 155, nil
 }
@@ -88,13 +90,13 @@ func (p *MsgClientAccept) Decode(data []byte) (int, error) {
 	}
 	p.Unk0 = data[0]
 	p.Unk1 = data[1]
-	p.PlayerName = cString16(data[2:68])
+	p.PlayerName = binenc.CString16(data[2:68])
 	p.PlayerClass = data[68]
 	p.IsFemale = data[69]
 	copy(p.Unk70[:], data[70:99])
 	p.ScreenWidth = binary.LittleEndian.Uint32(data[99:103])
 	p.ScreenHeight = binary.LittleEndian.Uint32(data[103:107])
-	p.Serial = cString(data[107:129])
+	p.Serial = binenc.CString(data[107:129])
 	copy(p.Unk129[:], data[129:155])
 	return 155, nil
 }

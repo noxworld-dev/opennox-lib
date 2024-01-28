@@ -3,6 +3,8 @@ package noxnet
 import (
 	"encoding/binary"
 	"io"
+
+	"github.com/noxworld-dev/opennox-lib/binenc"
 )
 
 func init() {
@@ -75,7 +77,7 @@ func (p *MsgServerInfo) Encode(data []byte) (int, error) {
 	data[0] = p.PlayersCur
 	data[1] = p.PlayersMax
 	copy(data[2:7], p.Unk2[:])
-	cStringSet0(data[7:16], p.MapName)
+	binenc.CStringSet0(data[7:16], p.MapName)
 	data[16] = p.Status1
 	data[17] = p.Status2
 	copy(data[18:25], p.Unk19[:])
@@ -86,7 +88,7 @@ func (p *MsgServerInfo) Encode(data []byte) (int, error) {
 	binary.LittleEndian.PutUint32(data[41:], p.Token)
 	copy(data[45:65], p.Unk45[:])
 	copy(data[65:69], p.Unk65[:])
-	cStringSet0(data[69:], p.ServerName)
+	binenc.CStringSet0(data[69:], p.ServerName)
 	return sz, nil
 }
 
@@ -97,7 +99,7 @@ func (p *MsgServerInfo) Decode(data []byte) (int, error) {
 	p.PlayersCur = data[0]
 	p.PlayersMax = data[1]
 	copy(p.Unk2[:], data[2:7])
-	p.MapName = cString(data[7:16])
+	p.MapName = binenc.CString(data[7:16])
 	p.Status1 = data[16]
 	p.Status2 = data[17]
 	copy(p.Unk19[:], data[18:25])
@@ -108,6 +110,6 @@ func (p *MsgServerInfo) Decode(data []byte) (int, error) {
 	p.Token = binary.LittleEndian.Uint32(data[41:])
 	copy(p.Unk45[:], data[45:65])
 	copy(p.Unk65[:], data[65:69])
-	p.ServerName = cString(data[69:])
+	p.ServerName = binenc.CString(data[69:])
 	return len(data), nil
 }

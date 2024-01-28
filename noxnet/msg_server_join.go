@@ -3,6 +3,8 @@ package noxnet
 import (
 	"encoding/binary"
 	"io"
+
+	"github.com/noxworld-dev/opennox-lib/binenc"
 )
 
 func init() {
@@ -31,8 +33,8 @@ func (p *MsgServerJoin) Encode(data []byte) (int, error) {
 		return 0, io.ErrShortBuffer
 	}
 	data[0] = p.Unk0
-	cStringSet16(data[1:53], p.PlayerName)
-	cStringSet(data[53:75], p.Serial)
+	binenc.CStringSet16(data[1:53], p.PlayerName)
+	binenc.CStringSet(data[53:75], p.Serial)
 	copy(data[75:77], p.Unk75[:])
 	binary.LittleEndian.PutUint32(data[77:81], p.Version)
 	copy(data[81:97], p.Unk81[:])
@@ -44,8 +46,8 @@ func (p *MsgServerJoin) Decode(data []byte) (int, error) {
 		return 0, io.ErrUnexpectedEOF
 	}
 	p.Unk0 = data[0]
-	p.PlayerName = cString16(data[1:53])
-	p.Serial = cString(data[53:75])
+	p.PlayerName = binenc.CString16(data[1:53])
+	p.Serial = binenc.CString(data[53:75])
 	copy(p.Unk75[:], data[75:77])
 	p.Version = binary.LittleEndian.Uint32(data[77:81])
 	copy(p.Unk81[:], data[81:97])
