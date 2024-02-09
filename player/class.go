@@ -1,9 +1,14 @@
 package player
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"fmt"
+	"strings"
+)
 
 var (
-	_ json.Marshaler = Class(0)
+	_ json.Marshaler   = Class(0)
+	_ json.Unmarshaler = (*Class)(nil)
 )
 
 const (
@@ -29,4 +34,25 @@ func (c Class) String() string {
 
 func (c Class) MarshalJSON() ([]byte, error) {
 	return json.Marshal(c.String())
+}
+
+func (c *Class) UnmarshalJSON(data []byte) error {
+	var s string
+	if err := json.Unmarshal(data, &s); err != nil {
+		return err
+	}
+	s = strings.ToLower(s)
+	switch s {
+	case "":
+		*c = 0
+	case "warrior":
+		*c = Warrior
+	case "wizard":
+		*c = Wizard
+	case "conjurer":
+		*c = Conjurer
+	default:
+		return fmt.Errorf("invalid class: %q", s)
+	}
+	return nil
 }
