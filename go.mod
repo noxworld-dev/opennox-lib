@@ -11,8 +11,8 @@ require (
 	github.com/noxworld-dev/noxcrypt v0.0.0-20230831140413-02623e75408e
 	github.com/noxworld-dev/noxscript/eud/v171 v171.3.1
 	github.com/noxworld-dev/noxscript/ns v1.0.2
-	github.com/noxworld-dev/noxscript/ns/v3 v3.4.2
-	github.com/noxworld-dev/noxscript/ns/v4 v4.14.0
+	github.com/noxworld-dev/noxscript/ns/v3 v3.4.4
+	github.com/noxworld-dev/noxscript/ns/v4 v4.18.0
 	github.com/shoenig/test v1.7.0
 	github.com/spf13/cobra v1.7.0
 	github.com/traefik/yaegi v0.15.2-0.20230926222205-da27c4fbc25f

@@ -23,10 +23,10 @@ github.com/noxworld-dev/noxscript/eud/v171 v171.3.1 h1:KRugWrwLY54qiRucyJn3iqvWr
 github.com/noxworld-dev/noxscript/eud/v171 v171.3.1/go.mod h1:Aigh/4MqsXvkPY/2JXXaNZghGK8mScpsip3Kdz6EUxE=
 github.com/noxworld-dev/noxscript/ns v1.0.2 h1:PMpKqRi3fEhwAfBM+PZVTopT6o2vL6AmCDQH8zV5QWU=
 github.com/noxworld-dev/noxscript/ns v1.0.2/go.mod h1:DobGfGPUycvh7D6hB5mW5gbL1QiRsw7QQiVPJz4wYZ0=
-github.com/noxworld-dev/noxscript/ns/v3 v3.4.2 h1:cvwGW7Cnx7nIurippYXiG17ft3brxjOtW3TWIiLsZ2s=
-github.com/noxworld-dev/noxscript/ns/v3 v3.4.2/go.mod h1:oouTgZPYQ/MeLLkpQsYwU7n+oIwfXB4DryLU0UhSj98=
-github.com/noxworld-dev/noxscript/ns/v4 v4.14.0 h1:43GYbBgVfVjqVyPrOBwxsNYf25ZGNF08aIXEslsu6/U=
-github.com/noxworld-dev/noxscript/ns/v4 v4.14.0/go.mod h1:l8sd8BvVo6LjzYjzAr7V/nbBkp0B/UMQRWbVTq0U67A=
+github.com/noxworld-dev/noxscript/ns/v3 v3.4.4 h1:xCq/s+bP8FmmdPq2tHeziSkyhgw4UVfRU9f/f3WV3Oc=
+github.com/noxworld-dev/noxscript/ns/v3 v3.4.4/go.mod h1:CM2cLjU/ZxYVVvG5WwP21nYM7H4g7bg68PQwZaOXX+E=
+github.com/noxworld-dev/noxscript/ns/v4 v4.18.0 h1:C9nmyV/pyVl2JQlHgcM6UV/CvOaDotRQNsdIv4z//fU=
+github.com/noxworld-dev/noxscript/ns/v4 v4.18.0/go.mod h1:5EClTEElcEsAKZBAW4lp+23N0s6X+P/832hJT0iSIOA=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/russross/blackfriday/v2 v2.1.0/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQDYRxCVz55jmeOWTM=

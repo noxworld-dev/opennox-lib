@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"go/format"
-	"go/token"
 	"io"
 	"log"
 	"os"
@@ -15,6 +13,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/noxworld-dev/noxscript/ns/asm"
+	nscmd "github.com/noxworld-dev/noxscript/ns/v3/cmd"
 	"github.com/noxworld-dev/noxscript/ns/v3/noxast"
 
 	"github.com/noxworld-dev/opennox-lib/maps"
@@ -73,7 +72,7 @@ func init() {
 	cmdDecompNoOpt := cmdDecomp.Flags().Bool("noopt", false, "do not optimize the code")
 	cmdDecompPkg := cmdDecomp.Flags().String("pkg", "", "package name for the script")
 	cmdDecomp.RunE = func(cmd *cobra.Command, args []string) error {
-		return cmdNSDecomp(cmd, args, &noxast.Config{
+		return nscmd.Decomp(args, &noxast.Config{
 			Package:       *cmdDecompPkg,
 			DoNotOptimize: *cmdDecompNoOpt,
 			DoNotFold:     *cmdDecompNoFold,
@@ -290,54 +289,4 @@ func cmdNSDisasm(cmd *cobra.Command, args []string) error {
 		fmt.Fprintln(out)
 	}
 	return last
-}
-
-func cmdNSDecomp(cmd *cobra.Command, args []string, c *noxast.Config) error {
-	if len(args) != 1 && len(args) != 2 {
-		return errors.New("expected one or two argument")
-	}
-	fname := args[0]
-	if c.Package == "" {
-		base := filepath.Base(fname)
-		base = strings.TrimSuffix(base, filepath.Ext(base))
-		if base != "" && !strings.ContainsAny(base, " ") {
-			c.Package = strings.ToLower(base)
-		}
-	}
-	var out io.Writer = os.Stdout
-	if len(args) == 2 {
-		f, err := os.Create(args[1])
-		if err != nil {
-			return err
-		}
-		defer f.Close()
-		out = f
-	}
-	f, err := os.Open(fname)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	var raw []byte
-	if filepath.Ext(fname) == ".map" {
-		s, err := maps.ReadScript(f)
-		if err != nil {
-			return err
-		}
-		raw = s.Data
-	} else {
-		raw, err = io.ReadAll(f)
-		if err != nil {
-			return err
-		}
-	}
-	_ = f.Close()
-
-	scr, err := asm.ReadScript(bytes.NewReader(raw))
-	if err != nil {
-		return err
-	}
-	astf := noxast.Translate(scr, c)
-	return format.Node(out, token.NewFileSet(), astf)
 }
