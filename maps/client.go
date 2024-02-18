@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -99,6 +100,8 @@ func (l *limitedReader) Read(p []byte) (n int, err error) {
 
 // DownloadMap with a given name to dest.
 func (c *Client) DownloadMap(ctx context.Context, dest string, name string) error {
+	name = filepath.ToSlash(name)
+	name = path.Base(name)
 	name = strings.TrimSuffix(strings.ToLower(name), Ext)
 	url := c.base + "/api/v0/maps/" + name + "/download"
 	Log.Println("GET", url)
