@@ -29,10 +29,10 @@ func New(title string, sz image.Point) (*Window, error) {
 		return nil, fmt.Errorf("SDL Initialization failed: %w", err)
 	}
 	sdl.SetHint(sdl.HINT_RENDER_SCALE_QUALITY, "1")
-	if err := sdl.GLSetAttribute(sdl.GL_CONTEXT_MAJOR_VERSION, 3); err != nil {
+	if err := sdl.GLSetAttribute(sdl.GL_CONTEXT_MAJOR_VERSION, 2); err != nil {
 		return nil, fmt.Errorf("cannot set OpenGL version: %w", err)
 	}
-	if err := sdl.GLSetAttribute(sdl.GL_CONTEXT_MINOR_VERSION, 3); err != nil {
+	if err := sdl.GLSetAttribute(sdl.GL_CONTEXT_MINOR_VERSION, 1); err != nil {
 		return nil, fmt.Errorf("cannot set OpenGL version: %w", err)
 	}
 	if err := sdl.GLSetAttribute(sdl.GL_CONTEXT_PROFILE_CORE, 1); err != nil {

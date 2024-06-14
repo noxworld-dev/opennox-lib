@@ -2,6 +2,7 @@ package script
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/noxworld-dev/opennox-lib/types"
 )
@@ -58,6 +59,7 @@ func (g *WaypointGroup) Enable(enable bool) {
 		return
 	}
 	for _, v := range g.list {
+		log.Printf("Setting waypoint %s to %s", v.ID(), enable)
 		v.Enable(enable)
 	}
 }
