@@ -44,6 +44,7 @@ func New(title string, sz image.Point) (*Window, error) {
 	if err := sdl.GLSetAttribute(sdl.GL_DOUBLEBUFFER, 1); err != nil {
 		return nil, fmt.Errorf("cannot set OpenGL attribute: %w", err)
 	}
+	sdl.GLSetSwapInterval(1)
 
 	win, err := sdl.CreateWindow(title, sdl.WINDOWPOS_UNDEFINED, sdl.WINDOWPOS_UNDEFINED, int32(sz.X), int32(sz.Y),
 		sdl.WINDOW_RESIZABLE|sdl.WINDOW_OPENGL|sdl.WINDOW_ALLOW_HIGHDPI)
