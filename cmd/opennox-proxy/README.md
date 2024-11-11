@@ -2,15 +2,7 @@
 
 This tool helps debug networking problems by sitting between Nox/OpenNox clients and the server.
 
-```
-/        \<--|        |<--|               |<--|          |
-|Client 1|   |        |   | C1 proxy port |   |          |
-\        /-->| Proxy  |-->|               |-->| Real Nox |
-             | server |                       | server   |
-/        \-->| port   |-->|               |-->|          |
-|Client 2|   |        |   | C2 proxy port |   |          |
-\        /<--|        |<--|               |<--|          |
-```
+![Diagram](./diagram.png)
 
 ## Flow from client
 1. Packets from clients are accepted on the server proxy port.

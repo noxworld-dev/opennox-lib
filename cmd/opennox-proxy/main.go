@@ -15,6 +15,9 @@ import (
 	"github.com/noxworld-dev/opennox-lib/noxnet"
 )
 
+//go:generate d2 diagram.d2 diagram.svg
+//go:generate d2 diagram.d2 diagram.png
+
 var (
 	fServer = flag.String("server", "127.0.0.1:18590", "server address to proxy requests to")
 	fHost   = flag.String("host", "0.0.0.0:18600", "address to host proxy on")
