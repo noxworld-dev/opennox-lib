@@ -1,7 +1,7 @@
 package noxnet
 
 import (
-	"github.com/noxworld-dev/opennox-lib/noxnet/xfer"
+	"github.com/noxworld-dev/opennox-lib/noxnet/netxfer"
 )
 
 func init() {
@@ -9,7 +9,7 @@ func init() {
 }
 
 type MsgXfer struct {
-	Msg xfer.Msg
+	Msg netxfer.Msg
 }
 
 func (*MsgXfer) NetOp() Op {
@@ -17,15 +17,15 @@ func (*MsgXfer) NetOp() Op {
 }
 
 func (m *MsgXfer) EncodeSize() int {
-	return xfer.EncodeSize(m.Msg)
+	return netxfer.EncodeSize(m.Msg)
 }
 
 func (m *MsgXfer) Encode(data []byte) (int, error) {
-	return xfer.Encode(data, m.Msg)
+	return netxfer.Encode(data, m.Msg)
 }
 
 func (m *MsgXfer) Decode(data []byte) (int, error) {
-	msg, n, err := xfer.Decode(data)
+	msg, n, err := netxfer.Decode(data)
 	m.Msg = msg
 	return n, err
 }

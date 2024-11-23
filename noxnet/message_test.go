@@ -11,7 +11,7 @@ import (
 	"github.com/shoenig/test/must"
 
 	"github.com/noxworld-dev/opennox-lib/binenc"
-	"github.com/noxworld-dev/opennox-lib/noxnet/xfer"
+	"github.com/noxworld-dev/opennox-lib/noxnet/netxfer"
 )
 
 func TestDecodePacket(t *testing.T) {
@@ -200,7 +200,7 @@ func TestDecodePacket(t *testing.T) {
 		},
 		{
 			name: "xfer start motd",
-			packet: &MsgXfer{&xfer.MsgStart{
+			packet: &MsgXfer{&netxfer.MsgStart{
 				Act:    1,
 				Unk1:   0,
 				Size:   376,
@@ -211,14 +211,14 @@ func TestDecodePacket(t *testing.T) {
 		},
 		{
 			name: "xfer accept",
-			packet: &MsgXfer{&xfer.MsgAccept{
+			packet: &MsgXfer{&netxfer.MsgAccept{
 				RecvID: 0,
 				SendID: 0,
 			}},
 		},
 		{
 			name: "xfer data motd",
-			packet: &MsgXfer{&xfer.MsgData{
+			packet: &MsgXfer{&netxfer.MsgData{
 				Token:  0,
 				RecvID: 0,
 				Chunk:  1,
@@ -227,7 +227,7 @@ func TestDecodePacket(t *testing.T) {
 		},
 		{
 			name: "xfer ack",
-			packet: &MsgXfer{&xfer.MsgAck{
+			packet: &MsgXfer{&netxfer.MsgAck{
 				Token:  0,
 				RecvID: 0,
 				Chunk:  1,
@@ -235,7 +235,7 @@ func TestDecodePacket(t *testing.T) {
 		},
 		{
 			name: "xfer close",
-			packet: &MsgXfer{&xfer.MsgDone{
+			packet: &MsgXfer{&netxfer.MsgDone{
 				RecvID: 0,
 			}},
 		},

@@ -1,4 +1,4 @@
-package xfer
+package netxfer
 
 import (
 	"encoding/binary"
