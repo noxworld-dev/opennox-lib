@@ -8,7 +8,7 @@ import (
 	"os"
 	"strings"
 
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 
 	"github.com/noxworld-dev/opennox-lib/spell"
 	"github.com/noxworld-dev/opennox-lib/strman"
@@ -262,14 +262,14 @@ func (f *SpellFlags) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (f *SpellFlags) unmarshalYAML(unmarshal func(interface{}) error) (bool, error) {
+func (f *SpellFlags) unmarshalYAML(n *yaml.Node) (bool, error) {
 	var v uint32
-	if err := unmarshal(&v); err == nil {
+	if err := n.Decode(&v); err == nil {
 		*f = SpellFlags(v)
 		return true, nil
 	}
 	var s string
-	err := unmarshal(&s)
+	err := n.Decode(&s)
 	if err != nil {
 		return false, err
 	}
@@ -277,12 +277,12 @@ func (f *SpellFlags) unmarshalYAML(unmarshal func(interface{}) error) (bool, err
 	return true, err
 }
 
-func (f *SpellFlags) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	if ok, err := f.unmarshalYAML(unmarshal); ok {
+func (f *SpellFlags) UnmarshalYAML(n *yaml.Node) error {
+	if ok, err := f.unmarshalYAML(n); ok {
 		return err
 	}
 	var arr []SpellFlags
-	if err := unmarshal(&arr); err != nil {
+	if err := n.Decode(&arr); err != nil {
 		return err
 	}
 	v := SpellFlags(0)

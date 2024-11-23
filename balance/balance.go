@@ -11,7 +11,7 @@ import (
 	"strings"
 	"unicode"
 
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 
 	"github.com/noxworld-dev/noxcrypt"
 
@@ -278,19 +278,26 @@ type ymlValue struct {
 	tags   map[Tag]Value
 }
 
-func (v *ymlValue) UnmarshalYAML(fnc func(interface{}) error) error {
-	var val float64
-	if err := fnc(&val); err == nil {
+func (v *ymlValue) UnmarshalYAML(n *yaml.Node) error {
+	switch n.Kind {
+	case yaml.ScalarNode:
+		var val float64
+		if err := n.Decode(&val); err != nil {
+			return err
+		}
 		v.global = Float(val)
 		return nil
-	}
-	var arr []float64
-	if err := fnc(&arr); err == nil {
+	case yaml.SequenceNode:
+		var arr []float64
+		if err := n.Decode(&arr); err != nil {
+			return err
+		}
 		v.global = Array(arr)
 		return nil
+	default:
 	}
 	var mval map[Tag]float64
-	if err := fnc(&mval); err == nil {
+	if err := n.Decode(&mval); err == nil {
 		v.tags = make(map[Tag]Value, len(mval))
 		for key, val := range mval {
 			v.tags[key] = Float(val)
@@ -298,16 +305,14 @@ func (v *ymlValue) UnmarshalYAML(fnc func(interface{}) error) error {
 		return nil
 	}
 	var marr map[Tag][]float64
-	if err := fnc(&marr); err == nil {
+	if err := n.Decode(&marr); err == nil {
 		v.tags = make(map[Tag]Value, len(mval))
 		for key, val := range marr {
 			v.tags[key] = Array(val)
 		}
 		return nil
 	}
-	var s string
-	_ = fnc(&s)
-	return fmt.Errorf("cannot decode value: %q", s)
+	return fmt.Errorf("cannot decode value: %q", n.Value)
 }
 
 func readGamedataYML(path string) (*File, error) {

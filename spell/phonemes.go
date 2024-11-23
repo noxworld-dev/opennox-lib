@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 var (
@@ -112,14 +112,14 @@ func (p *Phoneme) UnmarshalJSON(data []byte) error {
 	return p.parseText(s)
 }
 
-func (p *Phoneme) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (p *Phoneme) UnmarshalYAML(n *yaml.Node) error {
 	var v uint8
-	if err := unmarshal(&v); err == nil {
+	if err := n.Decode(&v); err == nil {
 		*p = Phoneme(v)
 		return nil
 	}
 	var s string
-	if err := unmarshal(&s); err != nil {
+	if err := n.Decode(&s); err != nil {
 		return err
 	}
 	return p.parseText(s)
