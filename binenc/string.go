@@ -27,10 +27,15 @@ func CString(data []byte) string {
 	return string(data)
 }
 
-func CStringSet0(data []byte, s string) {
+func CStringSet0(data []byte, s string) int {
 	zeros(data)
-	copy(data, s)
-	data[len(data)-1] = 0
+	n := copy(data, s)
+	i := n
+	if i >= len(data) {
+		i = len(data) - 1
+	}
+	data[i] = 0
+	return n
 }
 
 func CStringSet(data []byte, s string) int {
@@ -61,12 +66,13 @@ func CString16(data []byte) string {
 	return string(utf16.Decode(data16))
 }
 
-func CStringSet16(data []byte, s string) {
+func CStringSet16(data []byte, s string) int {
 	zeros(data)
 	data16 := utf16.Encode([]rune(s))
 	for i, v := range data16 {
 		binary.LittleEndian.PutUint16(data[2*i:], v)
 	}
+	return 2 * len(data16)
 }
 
 func zeros(data []byte) {
