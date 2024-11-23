@@ -3,6 +3,7 @@ package noxnet
 import (
 	"encoding/binary"
 	"io"
+	"time"
 )
 
 func init() {
@@ -11,17 +12,30 @@ func init() {
 	RegisterMessage(&MsgRateChange{})
 }
 
-func TimestampSet16(ts uint32, v uint16) uint32 {
+type Timestamp uint32
+
+func (t Timestamp) Dur(fps int) time.Duration {
+	return time.Duration(t) * time.Second / time.Duration(fps)
+}
+
+func (t *Timestamp) Set(v Timestamp) {
+	if v > *t {
+		*t = v
+	}
+}
+
+func (t *Timestamp) Set16(v uint16) {
+	ts := uint32(*t)
 	ts16 := uint16(ts & 0xFFFF)
 	overflow := (ts16 >= 0xC000) && (v < 0x4000)
 	if !overflow && v < ts16 {
-		return ts // out of order
+		return // out of order
 	}
 	ts = (ts & 0xFFFF0000) | uint32(v)
 	if overflow {
 		ts += 0x10000
 	}
-	return ts
+	*t = Timestamp(ts)
 }
 
 type MsgTimestamp struct {
@@ -53,7 +67,7 @@ func (m *MsgTimestamp) Decode(data []byte) (int, error) {
 }
 
 type MsgFullTimestamp struct {
-	T uint32
+	T Timestamp
 }
 
 func (*MsgFullTimestamp) NetOp() Op {
@@ -68,7 +82,7 @@ func (m *MsgFullTimestamp) Encode(data []byte) (int, error) {
 	if len(data) < 4 {
 		return 0, io.ErrShortBuffer
 	}
-	binary.LittleEndian.PutUint32(data[:4], m.T)
+	binary.LittleEndian.PutUint32(data[:4], uint32(m.T))
 	return 4, nil
 }
 
@@ -76,7 +90,7 @@ func (m *MsgFullTimestamp) Decode(data []byte) (int, error) {
 	if len(data) < 4 {
 		return 0, io.ErrUnexpectedEOF
 	}
-	m.T = binary.LittleEndian.Uint32(data[:4])
+	m.T = Timestamp(binary.LittleEndian.Uint32(data[:4]))
 	return 4, nil
 }
 

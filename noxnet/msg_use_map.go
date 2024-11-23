@@ -14,7 +14,7 @@ func init() {
 type MsgUseMap struct {
 	MapName binenc.String
 	CRC     uint32
-	T       uint32
+	T       Timestamp
 }
 
 func (*MsgUseMap) NetOp() Op {
@@ -31,7 +31,7 @@ func (m *MsgUseMap) Encode(data []byte) (int, error) {
 	}
 	m.MapName.Encode(data[0:32])
 	binary.LittleEndian.PutUint32(data[32:36], m.CRC)
-	binary.LittleEndian.PutUint32(data[36:40], m.T)
+	binary.LittleEndian.PutUint32(data[36:40], uint32(m.T))
 	return 40, nil
 }
 
@@ -41,6 +41,6 @@ func (m *MsgUseMap) Decode(data []byte) (int, error) {
 	}
 	m.MapName.Decode(data[0:32])
 	m.CRC = binary.LittleEndian.Uint32(data[32:36])
-	m.T = binary.LittleEndian.Uint32(data[36:40])
+	m.T = Timestamp(binary.LittleEndian.Uint32(data[36:40]))
 	return 40, nil
 }

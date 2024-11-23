@@ -20,12 +20,14 @@ func (op Op) Len() int {
 }
 
 const (
-	MSG_SERVER_DISCOVER = Op(12) // 0x0C
-	MSG_SERVER_INFO     = Op(13) // 0x0D
-	MSG_SERVER_JOIN     = Op(14) // 0x0E
-	MSG_SERVER_ERROR    = Op(19) // 0x13
-	MSG_SERVER_JOIN_OK  = Op(20) // 0x14
-	MSG_ACCEPTED        = Op(31) // 0x1F
+	MSG_SERVER_DISCOVER   = Op(12) // 0x0C
+	MSG_SERVER_INFO       = Op(13) // 0x0D
+	MSG_SERVER_JOIN       = Op(14) // 0x0E
+	MSG_PASSWORD_REQUIRED = Op(15) // 0x0F
+	MSG_SERVER_PASSWORD   = Op(17) // 0x11
+	MSG_SERVER_ERROR      = Op(19) // 0x13
+	MSG_SERVER_JOIN_OK    = Op(20) // 0x14
+	MSG_ACCEPTED          = Op(31) // 0x1F
 
 	MSG_XXX_STOP                       = Op(33)  // 0x21
 	MSG_PING                           = Op(36)  // 0x24

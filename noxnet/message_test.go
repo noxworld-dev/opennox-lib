@@ -51,7 +51,8 @@ func TestDecodePacket(t *testing.T) {
 		{
 			name: "server accept",
 			packet: &MsgServerAccept{
-				Unk0:   [2]byte{0x00, 0x01},
+				Unk0:   0x00,
+				Unk1:   0x01,
 				ID:     1,
 				XorKey: 0x9e,
 			},

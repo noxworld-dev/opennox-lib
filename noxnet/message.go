@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"reflect"
+	"slices"
 )
 
 var (
@@ -59,6 +60,33 @@ type Message interface {
 	Encoded
 }
 
+var _ Message = (*MsgUnknown)(nil)
+
+type MsgUnknown struct {
+	Op   Op
+	Data []byte
+}
+
+func (p *MsgUnknown) NetOp() Op {
+	return p.Op
+}
+
+func (p *MsgUnknown) EncodeSize() int {
+	return len(p.Data)
+}
+
+func (p *MsgUnknown) Encode(data []byte) (int, error) {
+	if len(data) < len(p.Data) {
+		return 0, io.ErrShortBuffer
+	}
+	n := copy(data, p.Data)
+	return n, nil
+}
+
+func (p *MsgUnknown) Decode(data []byte) (int, error) {
+	panic("decoding unknown packet without op")
+}
+
 func EncodePacketSize(p Message) int {
 	return 1 + p.EncodeSize()
 }
@@ -102,7 +130,9 @@ func DecodeAnyPacket(fromServer bool, data []byte) (Message, int, error) {
 		}
 	}
 	if !ok {
-		return nil, 0, fmt.Errorf("unsupported packet: %v", op)
+		return &MsgUnknown{
+			Op: op, Data: slices.Clone(data[1:]),
+		}, len(data), nil
 	}
 	p := reflect.New(rt).Interface().(Message)
 	n, err := p.Decode(data[1:])

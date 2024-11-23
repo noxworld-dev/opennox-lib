@@ -13,7 +13,8 @@ func init() {
 }
 
 type MsgServerAccept struct {
-	Unk0   [2]byte
+	Unk0   byte
+	Unk1   byte
 	ID     uint32
 	XorKey byte
 }
@@ -30,7 +31,8 @@ func (p *MsgServerAccept) Encode(data []byte) (int, error) {
 	if len(data) < 7 {
 		return 0, io.ErrShortBuffer
 	}
-	copy(data[0:2], p.Unk0[:])
+	data[0] = p.Unk0
+	data[1] = p.Unk1
 	binary.LittleEndian.PutUint32(data[2:6], p.ID)
 	data[6] = p.XorKey
 	return 7, nil
@@ -40,7 +42,8 @@ func (p *MsgServerAccept) Decode(data []byte) (int, error) {
 	if len(data) < 7 {
 		return 0, io.ErrUnexpectedEOF
 	}
-	copy(p.Unk0[:], data[0:2])
+	p.Unk0 = data[0]
+	p.Unk1 = data[1]
 	p.ID = binary.LittleEndian.Uint32(data[2:6])
 	p.XorKey = data[6]
 	return 7, nil
