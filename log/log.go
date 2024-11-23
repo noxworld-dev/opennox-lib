@@ -145,10 +145,11 @@ func NewHandler() slog.Handler {
 }
 
 func New(name string) *Logger {
-	if name != "" {
+	if name == "" {
 		name = "main"
 	}
 	log := slog.New(NewHandler())
+	log = WithSystem(log, name)
 	return &Logger{log}
 }
 
