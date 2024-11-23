@@ -5,7 +5,7 @@ import (
 )
 
 func init() {
-	RegisterMessage(&MsgFxJiggle{})
+	RegisterMessage(&MsgFxJiggle{}, false)
 }
 
 type MsgFxJiggle struct {

@@ -6,7 +6,7 @@ import (
 )
 
 func init() {
-	RegisterMessage(&MsgJoinData{})
+	RegisterMessage(&MsgJoinData{}, false)
 }
 
 type MsgJoinData struct {

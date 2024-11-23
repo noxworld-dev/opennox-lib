@@ -8,10 +8,12 @@ import (
 )
 
 func init() {
-	RegisterMessage(&MsgServerJoin{})
+	RegisterMessage(&MsgServerTryJoin{}, false)
+	RegisterMessage(&MsgJoinOK{}, false)
+	RegisterMessage(&MsgConnect{}, false)
 }
 
-type MsgServerJoin struct {
+type MsgServerTryJoin struct {
 	Unk0        byte     // 0
 	PlayerName  string   // 1-50
 	PlayerClass byte     // 51
@@ -24,15 +26,15 @@ type MsgServerJoin struct {
 	Unk96       byte     // 96
 }
 
-func (*MsgServerJoin) NetOp() Op {
-	return MSG_SERVER_JOIN
+func (*MsgServerTryJoin) NetOp() Op {
+	return MSG_SERVER_TRY_JOIN
 }
 
-func (*MsgServerJoin) EncodeSize() int {
+func (*MsgServerTryJoin) EncodeSize() int {
 	return 97
 }
 
-func (p *MsgServerJoin) Encode(data []byte) (int, error) {
+func (p *MsgServerTryJoin) Encode(data []byte) (int, error) {
 	if len(data) < 97 {
 		return 0, io.ErrShortBuffer
 	}
@@ -47,7 +49,7 @@ func (p *MsgServerJoin) Encode(data []byte) (int, error) {
 	return 97, nil
 }
 
-func (p *MsgServerJoin) Decode(data []byte) (int, error) {
+func (p *MsgServerTryJoin) Decode(data []byte) (int, error) {
 	if len(data) < 97 {
 		return 0, io.ErrUnexpectedEOF
 	}
@@ -60,4 +62,42 @@ func (p *MsgServerJoin) Decode(data []byte) (int, error) {
 	p.Unk95 = data[95]
 	p.Unk96 = data[96]
 	return 97, nil
+}
+
+type MsgJoinOK struct {
+}
+
+func (*MsgJoinOK) NetOp() Op {
+	return MSG_SERVER_JOIN_OK
+}
+
+func (*MsgJoinOK) EncodeSize() int {
+	return 0
+}
+
+func (p *MsgJoinOK) Encode(data []byte) (int, error) {
+	return 0, nil
+}
+
+func (p *MsgJoinOK) Decode(data []byte) (int, error) {
+	return 0, nil
+}
+
+type MsgConnect struct {
+}
+
+func (*MsgConnect) NetOp() Op {
+	return MSG_SERVER_CONNECT
+}
+
+func (*MsgConnect) EncodeSize() int {
+	return 0
+}
+
+func (p *MsgConnect) Encode(data []byte) (int, error) {
+	return 0, nil
+}
+
+func (p *MsgConnect) Decode(data []byte) (int, error) {
+	return 0, nil
 }

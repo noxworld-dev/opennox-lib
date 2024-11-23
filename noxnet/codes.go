@@ -1,15 +1,8 @@
 package noxnet
 
-import "strconv"
+//go:generate stringer -type=Op
 
 type Op byte
-
-func (op Op) String() string {
-	if s := opNames[op]; s != "" {
-		return s
-	}
-	return strconv.FormatUint(uint64(op), 16)
-}
 
 func (op Op) Len() int {
 	n, ok := opLen[op]
@@ -20,17 +13,45 @@ func (op Op) Len() int {
 }
 
 const (
-	MSG_SERVER_DISCOVER   = Op(12) // 0x0C
-	MSG_SERVER_INFO       = Op(13) // 0x0D
-	MSG_SERVER_JOIN       = Op(14) // 0x0E
-	MSG_PASSWORD_REQUIRED = Op(15) // 0x0F
-	MSG_SERVER_PASSWORD   = Op(17) // 0x11
-	MSG_SERVER_ERROR      = Op(19) // 0x13
-	MSG_SERVER_JOIN_OK    = Op(20) // 0x14
-	MSG_ACCEPTED          = Op(31) // 0x1F
-
-	MSG_XXX_STOP                       = Op(33)  // 0x21
+	MSG_SERVER_CONNECT                 = Op(0)   // 0x00
+	MSG_SERVER_ACCEPT                  = Op(1)   // 0x01
+	MSG_CODE2                          = Op(2)   // 0x02
+	MSG_CODE3                          = Op(3)   // 0x03
+	MSG_CODE4                          = Op(4)   // 0x04
+	MSG_CODE5                          = Op(5)   // 0x05
+	MSG_CLIENT_PING                    = Op(6)   // 0x06
+	MSG_CODE7                          = Op(7)   // 0x07
+	MSG_CLIENT_PONG                    = Op(8)   // 0x08
+	MSG_CODE9                          = Op(9)   // 0x09
+	MSG_CLIENT_CLOSE                   = Op(10)  // 0x0A
+	MSG_SERVER_CLOSE                   = Op(11)  // 0x0B
+	MSG_SERVER_DISCOVER                = Op(12)  // 0x0C
+	MSG_SERVER_INFO                    = Op(13)  // 0x0D
+	MSG_SERVER_TRY_JOIN                = Op(14)  // 0x0E
+	MSG_PASSWORD_REQUIRED              = Op(15)  // 0x0F
+	MSG_SERVER_PING                    = Op(16)  // 0x10
+	MSG_SERVER_PASSWORD                = Op(17)  // 0x11
+	MSG_SERVER_PONG                    = Op(18)  // 0x12
+	MSG_SERVER_ERROR                   = Op(19)  // 0x13
+	MSG_SERVER_JOIN_OK                 = Op(20)  // 0x14
+	MSG_SERVER_JOIN_FAIL               = Op(21)  // 0x15
+	MSG_CODE22                         = Op(22)  // 0x16
+	MSG_CODE23                         = Op(23)  // 0x17
+	MSG_CODE24                         = Op(24)  // 0x18
+	MSG_CODE25                         = Op(25)  // 0x19
+	MSG_CODE26                         = Op(26)  // 0x1A
+	MSG_CODE27                         = Op(27)  // 0x1B
+	MSG_CODE28                         = Op(28)  // 0x1C
+	MSG_CODE29                         = Op(29)  // 0x1D
+	MSG_CODE30                         = Op(30)  // 0x1E
+	MSG_ACCEPTED                       = Op(31)  // 0x1F
+	MSG_CLIENT_ACCEPT                  = Op(32)  // 0x20
+	MSG_SERVER_CLOSE_ACK               = Op(33)  // 0x21
+	MSG_CLIENT_CLOSE_ACK               = Op(34)  // 0x22
+	MSG_SPEED                          = Op(35)  // 0x23
 	MSG_PING                           = Op(36)  // 0x24
+	MSG_CODE37                         = Op(37)  // 0x25
+	MSG_CODE38                         = Op(38)  // 0x26
 	MSG_TIMESTAMP                      = Op(39)  // 0x27
 	MSG_FULL_TIMESTAMP                 = Op(40)  // 0x28
 	MSG_NEED_TIMESTAMP                 = Op(41)  // 0x29
@@ -237,15 +258,8 @@ const (
 )
 
 var opLen = map[Op]int{
-	6:            4,
-	MSG_ACCEPTED: 7, // TODO: this is the length of a server-side message only!
-
 	MSG_INCOMING_CLIENT:                0,
 	MSG_CLIENT_READY:                   0,
-	MSG_TIMESTAMP:                      2,
-	MSG_FULL_TIMESTAMP:                 4,
-	MSG_USE_MAP:                        40,
-	MSG_JOIN_DATA:                      6,
 	MSG_NEW_PLAYER:                     128,
 	MSG_PLAYER_QUIT:                    2,
 	MSG_SIMPLE_OBJ:                     8,
@@ -329,7 +343,6 @@ var opLen = map[Op]int{
 	MSG_FX_MANA_BOMB_CANCEL:            4,
 	MSG_AUDIO_EVENT:                    3,
 	MSG_AUDIO_PLAYER_EVENT:             3,
-	MSG_IMPORTANT_ACK:                  4,
 	MSG_OUTGOING_CLIENT:                2,
 	MSG_GAME_SETTINGS:                  19,
 	MSG_GAME_SETTINGS_2:                48,
@@ -360,225 +373,7 @@ var opLen = map[Op]int{
 	MSG_STAT_MULTIPLIERS:               16,
 	MSG_IMPORTANT:                      -1,
 	MSG_UPDATE_STREAM:                  -1, // dynamic
-	MSG_TEXT_MESSAGE:                   -1, // dynamic
-	MSG_INFORM:                         -1, // dynamic
-	MSG_XFER_MSG:                       -1, // dynamic
 	MSG_TEAM_MSG:                       -1, // dynamic
 	MSG_SEQ_IMPORTANT:                  -1, // dynamic
 	MSG_GAUNTLET:                       -1, // dynamic
-}
-
-var opNames = map[Op]string{
-	12: "MSG_SERVER_DISCOVER", // 0x0C
-	13: "MSG_SERVER_INFO",     // 0x0D
-	14: "MSG_SERVER_JOIN",     // 0x0E
-	19: "MSG_SERVER_ERROR",    // 0x13
-	20: "MSG_SERVER_JOIN_OK",  // 0x14
-	31: "MSG_ACCEPTED",        // 0x1F
-
-	33: "MSG_XXX_STOP",
-
-	39:  "MSG_TIMESTAMP",                      // 0x27
-	40:  "MSG_FULL_TIMESTAMP",                 // 0x28
-	41:  "MSG_NEED_TIMESTAMP",                 // 0x29
-	42:  "MSG_SIMULATED_TIMESTAMP",            // 0x2A
-	43:  "MSG_USE_MAP",                        // 0x2B
-	44:  "MSG_JOIN_DATA",                      // 0x2C
-	45:  "MSG_NEW_PLAYER",                     // 0x2D
-	46:  "MSG_PLAYER_QUIT",                    // 0x2E
-	47:  "MSG_SIMPLE_OBJ",                     // 0x2F
-	48:  "MSG_COMPLEX_OBJ",                    // 0x30
-	49:  "MSG_DESTROY_OBJECT",                 // 0x31
-	50:  "MSG_OBJECT_OUT_OF_SIGHT",            // 0x32
-	51:  "MSG_OBJECT_IN_SHADOWS",              // 0x33
-	52:  "MSG_OBJECT_FRIEND_ADD",              // 0x34
-	53:  "MSG_OBJECT_FRIEND_REMOVE",           // 0x35
-	54:  "MSG_RESET_FRIENDS",                  // 0x36
-	55:  "MSG_ENABLE_OBJECT",                  // 0x37
-	56:  "MSG_DISABLE_OBJECT",                 // 0x38
-	57:  "MSG_DRAW_FRAME",                     // 0x39
-	58:  "MSG_DESTROY_WALL",                   // 0x3A
-	59:  "MSG_OPEN_WALL",                      // 0x3B
-	60:  "MSG_CLOSE_WALL",                     // 0x3C
-	61:  "MSG_CHANGE_OR_ADD_WALL_MAGIC",       // 0x3D
-	62:  "MSG_REMOVE_WALL_MAGIC",              // 0x3E
-	63:  "MSG_PLAYER_INPUT",                   // 0x3F
-	64:  "MSG_PLAYER_SET_WAYPOINT",            // 0x40
-	65:  "MSG_REPORT_HEALTH",                  // 0x41
-	66:  "MSG_REPORT_HEALTH_DELTA",            // 0x42
-	67:  "MSG_REPORT_PLAYER_HEALTH",           // 0x43
-	68:  "MSG_REPORT_ITEM_HEALTH",             // 0x44
-	69:  "MSG_REPORT_MANA",                    // 0x45
-	70:  "MSG_REPORT_POISON",                  // 0x46
-	71:  "MSG_REPORT_STAMINA",                 // 0x47
-	72:  "MSG_REPORT_STATS",                   // 0x48
-	73:  "MSG_REPORT_ARMOR_VALUE",             // 0x49
-	74:  "MSG_REPORT_GOLD",                    // 0x4A
-	75:  "MSG_REPORT_PICKUP",                  // 0x4B
-	76:  "MSG_REPORT_MODIFIABLE_PICKUP",       // 0x4C
-	77:  "MSG_REPORT_DROP",                    // 0x4D
-	78:  "MSG_REPORT_LESSON",                  // 0x4E
-	79:  "MSG_REPORT_MUNDANE_ARMOR_EQUIP",     // 0x4F
-	80:  "MSG_REPORT_MUNDANE_WEAPON_EQUIP",    // 0x50
-	81:  "MSG_REPORT_MODIFIABLE_WEAPON_EQUIP", // 0x51
-	82:  "MSG_REPORT_MODIFIABLE_ARMOR_EQUIP",  // 0x52
-	83:  "MSG_REPORT_ARMOR_DEQUIP",            // 0x53
-	84:  "MSG_REPORT_WEAPON_DEQUIP",           // 0x54
-	85:  "MSG_REPORT_TREASURE_COUNT",          // 0x55
-	86:  "MSG_REPORT_FLAG_BALL_WINNER",        // 0x56
-	87:  "MSG_REPORT_FLAG_WINNER",             // 0x57
-	88:  "MSG_REPORT_DEATHMATCH_WINNER",       // 0x58
-	89:  "MSG_REPORT_DEATHMATCH_TEAM_WINNER",  // 0x59
-	90:  "MSG_REPORT_ENCHANTMENT",             // 0x5A
-	91:  "MSG_REPORT_ITEM_ENCHANTMENT",        // 0x5B
-	92:  "MSG_REPORT_LIGHT_COLOR",             // 0x5C
-	93:  "MSG_REPORT_LIGHT_INTENSITY",         // 0x5D
-	94:  "MSG_REPORT_Z_PLUS",                  // 0x5E
-	95:  "MSG_REPORT_Z_MINUS",                 // 0x5F
-	96:  "MSG_REPORT_EQUIP",                   // 0x60
-	97:  "MSG_REPORT_DEQUIP",                  // 0x61
-	98:  "MSG_REPORT_ACQUIRE_SPELL",           // 0x62
-	99:  "MSG_REPORT_TARGET",                  // 0x63
-	100: "MSG_REPORT_CHARGES",                 // 0x64
-	101: "MSG_REPORT_X_STATUS",                // 0x65
-	102: "MSG_REPORT_PLAYER_STATUS",           // 0x66
-	103: "MSG_REPORT_MODIFIER",                // 0x67
-	104: "MSG_REPORT_STAT_MODIFIER",           // 0x68
-	105: "MSG_REPORT_NPC",                     // 0x69
-	106: "MSG_REPORT_CLIENT_STATUS",           // 0x6A
-	107: "MSG_REPORT_ANIMATION_FRAME",         // 0x6B
-	108: "MSG_REPORT_ACQUIRE_CREATURE",        // 0x6C
-	109: "MSG_REPORT_LOSE_CREATURE",           // 0x6D
-	110: "MSG_REPORT_EXPERIENCE",              // 0x6E
-	111: "MSG_REPORT_SPELL_AWARD",             // 0x6F
-	112: "MSG_REPORT_SPELL_START",             // 0x70
-	113: "MSG_REPORT_INVENTORY_LOADED",        // 0x71
-	114: "MSG_TRY_DROP",                       // 0x72
-	115: "MSG_TRY_GET",                        // 0x73
-	116: "MSG_TRY_USE",                        // 0x74
-	117: "MSG_TRY_EQUIP",                      // 0x75
-	118: "MSG_TRY_DEQUIP",                     // 0x76
-	119: "MSG_TRY_TARGET",                     // 0x77
-	120: "MSG_TRY_CREATURE_COMMAND",           // 0x78
-	121: "MSG_TRY_SPELL",                      // 0x79
-	122: "MSG_TRY_ABILITY",                    // 0x7A
-	123: "MSG_TRY_COLLIDE",                    // 0x7B
-	124: "MSG_FX_PARTICLEFX",                  // 0x7C
-	125: "MSG_FX_PLASMA",                      // 0x7D
-	126: "MSG_FX_SUMMON",                      // 0x7E
-	127: "MSG_FX_SUMMON_CANCEL",               // 0x7F
-	128: "MSG_FX_SHIELD",                      // 0x80
-	129: "MSG_FX_BLUE_SPARKS",                 // 0x81
-	130: "MSG_FX_YELLOW_SPARKS",               // 0x82
-	131: "MSG_FX_CYAN_SPARKS",                 // 0x83
-	132: "MSG_FX_VIOLET_SPARKS",               // 0x84
-	133: "MSG_FX_EXPLOSION",                   // 0x85
-	134: "MSG_FX_LESSER_EXPLOSION",            // 0x86
-	135: "MSG_FX_COUNTERSPELL_EXPLOSION",      // 0x87
-	136: "MSG_FX_THIN_EXPLOSION",              // 0x88
-	137: "MSG_FX_TELEPORT",                    // 0x89
-	138: "MSG_FX_SMOKE_BLAST",                 // 0x8A
-	139: "MSG_FX_DAMAGE_POOF",                 // 0x8B
-	140: "MSG_FX_LIGHTNING",                   // 0x8C
-	141: "MSG_FX_ENERGY_BOLT",                 // 0x8D
-	142: "MSG_FX_CHAIN_LIGHTNING_BOLT",        // 0x8E
-	143: "MSG_FX_DRAIN_MANA",                  // 0x8F
-	144: "MSG_FX_CHARM",                       // 0x90
-	145: "MSG_FX_GREATER_HEAL",                // 0x91
-	146: "MSG_FX_MAGIC",                       // 0x92
-	147: "MSG_FX_SPARK_EXPLOSION",             // 0x93
-	148: "MSG_FX_DEATH_RAY",                   // 0x94
-	149: "MSG_FX_SENTRY_RAY",                  // 0x95
-	150: "MSG_FX_RICOCHET",                    // 0x96
-	151: "MSG_FX_JIGGLE",                      // 0x97
-	152: "MSG_FX_GREEN_BOLT",                  // 0x98
-	153: "MSG_FX_GREEN_EXPLOSION",             // 0x99
-	154: "MSG_FX_WHITE_FLASH",                 // 0x9A
-	155: "MSG_FX_GENERATING_MAP",              // 0x9B
-	156: "MSG_FX_ASSEMBLING_MAP",              // 0x9C
-	157: "MSG_FX_POPULATING_MAP",              // 0x9D
-	158: "MSG_FX_DURATION_SPELL",              // 0x9E
-	159: "MSG_FX_DELTAZ_SPELL_START",          // 0x9F
-	160: "MSG_FX_TURN_UNDEAD",                 // 0xA0
-	161: "MSG_FX_ARROW_TRAP",                  // 0xA1
-	162: "MSG_FX_VAMPIRISM",                   // 0xA2
-	163: "MSG_FX_MANA_BOMB_CANCEL",            // 0xA3
-	164: "MSG_UPDATE_STREAM",                  // 0xA4
-	165: "MSG_NEW_ALIAS",                      // 0xA5
-	166: "MSG_AUDIO_EVENT",                    // 0xA6
-	167: "MSG_AUDIO_PLAYER_EVENT",             // 0xA7
-	168: "MSG_TEXT_MESSAGE",                   // 0xA8
-	169: "MSG_INFORM",                         // 0xA9
-	170: "MSG_IMPORTANT",                      // 0xAA
-	171: "MSG_IMPORTANT_ACK",                  // 0xAB
-	172: "MSG_MOUSE",                          // 0xAC
-	173: "MSG_INCOMING_CLIENT",                // 0xAD
-	174: "MSG_OUTGOING_CLIENT",                // 0xAE
-	175: "MSG_GAME_SETTINGS",                  // 0xAF
-	176: "MSG_GAME_SETTINGS_2",                // 0xB0
-	177: "MSG_UPDATE_GUI_GAME_SETTINGS",       // 0xB1
-	178: "MSG_DOOR_ANGLE",                     // 0xB2
-	179: "MSG_OBELISK_CHARGE",                 // 0xB3
-	180: "MSG_PENTAGRAM_ACTIVATE",             // 0xB4
-	181: "MSG_CLIENT_PREDICT_LINEAR",          // 0xB5
-	182: "MSG_REQUEST_MAP",                    // 0xB6
-	183: "MSG_CANCEL_MAP",                     // 0xB7
-	184: "MSG_MAP_SEND_START",                 // 0xB8
-	185: "MSG_MAP_SEND_PACKET",                // 0xB9
-	186: "MSG_MAP_SEND_ABORT",                 // 0xBA
-	187: "MSG_SERVER_CMD",                     // 0xBB
-	188: "MSG_SYSOP_PW",                       // 0xBC
-	189: "MSG_SYSOP_RESULT",                   // 0xBD
-	190: "MSG_KEEP_ALIVE",                     // 0xBE
-	191: "MSG_RECEIVED_MAP",                   // 0xBF
-	192: "MSG_CLIENT_READY",                   // 0xC0
-	193: "MSG_REQUEST_SAVE_PLAYER",            // 0xC1
-	194: "MSG_XFER_MSG",                       // 0xC2
-	195: "MSG_PLAYER_OBJ",                     // 0xC3
-	196: "MSG_TEAM_MSG",                       // 0xC4
-	197: "MSG_KICK_NOTIFICATION",              // 0xC5
-	198: "MSG_TIMEOUT_NOTIFICATION",           // 0xC6
-	199: "MSG_SERVER_QUIT",                    // 0xC7
-	200: "MSG_SERVER_QUIT_ACK",                // 0xC8
-	201: "MSG_TRADE",                          // 0xC9
-	202: "MSG_CHAT_KILL",                      // 0xCA
-	203: "MSG_MESSAGES_KILL",                  // 0xCB
-	204: "MSG_SEQ_IMPORTANT",                  // 0xCC
-	205: "MSG_REPORT_ABILITY_AWARD",           // 0xCD
-	206: "MSG_REPORT_ABILITY_STATE",           // 0xCE
-	207: "MSG_REPORT_ACTIVE_ABILITIES",        // 0xCF
-	208: "MSG_DIALOG",                         // 0xD0
-	209: "MSG_REPORT_GUIDE_AWARD",             // 0xD1
-	210: "MSG_INTERESTING_ID",                 // 0xD2
-	211: "MSG_TIMER_STATUS",                   // 0xD3
-	212: "MSG_REQUEST_TIMER_STATUS",           // 0xD4
-	213: "MSG_JOURNAL_MSG",                    // 0xD5
-	214: "MSG_CHAPTER_END",                    // 0xD6
-	215: "MSG_REPORT_ALL_LATENCY",             // 0xD7
-	216: "MSG_REPORT_FLAG_STATUS",             // 0xD8
-	217: "MSG_REPORT_BALL_STATUS",             // 0xD9
-	218: "MSG_REPORT_OBJECT_POISON",           // 0xDA
-	219: "MSG_REPORT_MONITOR_CREATURE",        // 0xDB
-	220: "MSG_REPORT_UNMONITOR_CREATURE",      // 0xDC
-	221: "MSG_REPORT_TOTAL_HEALTH",            // 0xDD
-	222: "MSG_REPORT_TOTAL_MANA",              // 0xDE
-	223: "MSG_REPORT_SPELL_STAT",              // 0xDF
-	224: "MSG_REPORT_SECONDARY_WEAPON",        // 0xE0
-	225: "MSG_REPORT_LAST_QUIVER",             // 0xE1
-	226: "MSG_INFO_BOOK_DATA",                 // 0xE2
-	227: "MSG_SOCIAL",                         // 0xE3
-	228: "MSG_FADE_BEGIN",                     // 0xE4
-	229: "MSG_MUSIC_EVENT",                    // 0xE5
-	230: "MSG_MUSIC_PUSH_EVENT",               // 0xE6
-	231: "MSG_MUSIC_POP_EVENT",                // 0xE7
-	232: "MSG_PLAYER_DIED",                    // 0xE8
-	233: "MSG_PLAYER_RESPAWN",                 // 0xE9
-	234: "MSG_FORGET_DRAWABLES",               // 0xEA
-	235: "MSG_RESET_ABILITIES",                // 0xEB
-	236: "MSG_RATE_CHANGE",                    // 0xEC
-	237: "MSG_REPORT_CREATURE_CMD",            // 0xED
-	238: "MSG_VOTE",                           // 0xEE
-	239: "MSG_STAT_MULTIPLIERS",               // 0xEF
-	240: "MSG_GAUNTLET",                       // 0xF0
-	241: "MSG_INVENTORY_FAIL",                 // 0xF1
 }

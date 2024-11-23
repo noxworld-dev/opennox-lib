@@ -6,7 +6,7 @@ import (
 )
 
 func init() {
-	RegisterMessage(&MsgWallDestroy{})
+	RegisterMessage(&MsgWallDestroy{}, false)
 }
 
 type MsgWallDestroy struct {

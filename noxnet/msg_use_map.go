@@ -8,7 +8,7 @@ import (
 )
 
 func init() {
-	RegisterMessage(&MsgUseMap{})
+	RegisterMessage(&MsgUseMap{}, false)
 }
 
 type MsgUseMap struct {

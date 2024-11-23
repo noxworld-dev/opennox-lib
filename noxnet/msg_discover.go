@@ -8,8 +8,8 @@ import (
 )
 
 func init() {
-	RegisterMessage(&MsgDiscover{})
-	RegisterMessage(&MsgServerInfo{})
+	RegisterMessage(&MsgDiscover{}, false)
+	RegisterMessage(&MsgServerInfo{}, true)
 }
 
 type MsgDiscover struct {

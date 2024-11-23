@@ -7,7 +7,7 @@ import (
 )
 
 func init() {
-	RegisterMessage(&MsgServerPass{})
+	RegisterMessage(&MsgServerPass{}, false)
 }
 
 type MsgServerPass struct {

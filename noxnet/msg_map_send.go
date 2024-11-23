@@ -10,10 +10,10 @@ import (
 )
 
 func init() {
-	RegisterMessage(&MsgMapSendStart{})
-	RegisterMessage(&MsgMapSendAbort{})
-	RegisterMessage(&MsgMapSendPacket{})
-	RegisterMessage(&MsgMapReceived{})
+	RegisterMessage(&MsgMapSendStart{}, false)
+	RegisterMessage(&MsgMapSendAbort{}, false)
+	RegisterMessage(&MsgMapSendPacket{}, true)
+	RegisterMessage(&MsgMapReceived{}, false)
 }
 
 type MsgMapSendStart struct {

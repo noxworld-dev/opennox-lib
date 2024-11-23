@@ -5,7 +5,7 @@ import (
 )
 
 func init() {
-	RegisterMessage(&MsgXfer{})
+	RegisterMessage(&MsgXfer{}, true)
 }
 
 type MsgXfer struct {

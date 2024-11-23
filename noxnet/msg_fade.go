@@ -5,7 +5,7 @@ import (
 )
 
 func init() {
-	RegisterMessage(&MsgFadeBegin{})
+	RegisterMessage(&MsgFadeBegin{}, false)
 }
 
 type MsgFadeBegin struct {

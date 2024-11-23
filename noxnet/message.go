@@ -8,45 +8,20 @@ import (
 )
 
 var (
-	byOp       = make(map[Op]reflect.Type)
-	serverOnly = make(map[Op]reflect.Type)
-	clientOnly = make(map[Op]reflect.Type)
+	byOp = make(map[Op]reflect.Type)
 )
 
-func RegisterMessage(p Message) {
+func RegisterMessage(p Message, dynamic bool) {
 	op := p.NetOp()
 	if _, ok := byOp[op]; ok {
-		panic("already registered")
-	}
-	if _, ok := serverOnly[op]; ok {
-		panic("already registered")
-	}
-	if _, ok := clientOnly[op]; ok {
 		panic("already registered")
 	}
 	byOp[op] = reflect.TypeOf(p).Elem()
-}
-
-func RegisterServerMessage(p Message) {
-	op := p.NetOp()
-	if _, ok := serverOnly[op]; ok {
-		panic("already registered")
+	if dynamic {
+		opLen[op] = -1
+	} else {
+		opLen[op] = p.EncodeSize()
 	}
-	if _, ok := byOp[op]; ok {
-		panic("already registered")
-	}
-	serverOnly[op] = reflect.TypeOf(p).Elem()
-}
-
-func RegisterClientMessage(p Message) {
-	op := p.NetOp()
-	if _, ok := clientOnly[op]; ok {
-		panic("already registered")
-	}
-	if _, ok := byOp[op]; ok {
-		panic("already registered")
-	}
-	clientOnly[op] = reflect.TypeOf(p).Elem()
 }
 
 type Encoded interface {
@@ -116,19 +91,12 @@ func AppendPacket(data []byte, p Message) ([]byte, error) {
 	return data, nil
 }
 
-func DecodeAnyPacket(fromServer bool, data []byte) (Message, int, error) {
+func DecodeAnyPacket(data []byte) (Message, int, error) {
 	if len(data) == 0 {
 		return nil, 0, io.EOF
 	}
 	op := Op(data[0])
 	rt, ok := byOp[op]
-	if !ok {
-		if fromServer {
-			rt, ok = serverOnly[op]
-		} else {
-			rt, ok = clientOnly[op]
-		}
-	}
 	if !ok {
 		return &MsgUnknown{
 			Op: op, Data: slices.Clone(data[1:]),

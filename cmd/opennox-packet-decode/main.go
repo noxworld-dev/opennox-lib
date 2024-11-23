@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 
 	"github.com/noxworld-dev/opennox-lib/noxnet"
@@ -81,16 +82,16 @@ func (r RecordIn) Decode() RecordOut {
 	}
 	hdr, data := raw[:2], raw[2:]
 	o.Hdr = hex.EncodeToString(hdr)
-	if hdr[0] == 0xff {
-		o.SID = 0xff
+	reliable := hdr[0]&0x80 != 0
+	o.SID = hdr[0] &^ 0x80
+	if seq := hdr[1]; reliable {
+		o.Syn = &seq
 	} else {
-		o.Reliable = hdr[0]&0x80 != 0
-		o.SID = hdr[0] &^ 0x80
-		o.Seq = hdr[1]
+		o.Ack = &seq
 	}
 	if len(data) == 1 {
 		op := noxnet.Op(data[0])
-		if _, _, err := noxnet.DecodeAnyPacket(o.SrcID == 0, data); err != nil {
+		if _, _, err := noxnet.DecodeAnyPacket(data); err != nil {
 			s := op.String()
 			o.Op = &s
 			return o
@@ -106,10 +107,12 @@ func (r RecordIn) Decode() RecordOut {
 			sz = n + 1
 			lenOK = true
 		}
-		if m, n, err := noxnet.DecodeAnyPacket(o.SrcID == 0, data); err == nil && n > 0 {
+		if m, n, err := noxnet.DecodeAnyPacket(data); err == nil && n > 0 {
 			sz = n
 			v = m
 			lenOK = true
+		} else if err != nil {
+			slog.Error("cannot decode message", "op", op, "err", err)
 		}
 		if !lenOK {
 			allSplit = false
@@ -131,18 +134,18 @@ func (r RecordIn) Decode() RecordOut {
 }
 
 type RecordOut struct {
-	SrcID    uint32  `json:"src_id"`
-	DstID    uint32  `json:"dst_id"`
-	Src      string  `json:"src"`
-	Dst      string  `json:"dst"`
-	Hdr      string  `json:"hdr"`
-	Reliable bool    `json:"reliable"`
-	SID      byte    `json:"sid"`
-	Seq      byte    `json:"seq"`
-	Len      int     `json:"len"`
-	Op       *string `json:"op,omitempty"`
-	Msgs     []Msg   `json:"msgs,omitempty"`
-	Data     string  `json:"data,omitempty"`
+	SrcID uint32  `json:"src_id"`
+	DstID uint32  `json:"dst_id"`
+	Src   string  `json:"src"`
+	Dst   string  `json:"dst"`
+	Hdr   string  `json:"hdr"`
+	SID   byte    `json:"sid"`
+	Syn   *byte   `json:"syn,omitempty"`
+	Ack   *byte   `json:"ack,omitempty"`
+	Len   int     `json:"len"`
+	Op    *string `json:"op,omitempty"`
+	Msgs  []Msg   `json:"msgs,omitempty"`
+	Data  string  `json:"data,omitempty"`
 }
 
 type Msg struct {

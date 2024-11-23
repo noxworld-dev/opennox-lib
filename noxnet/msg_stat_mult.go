@@ -7,7 +7,7 @@ import (
 )
 
 func init() {
-	RegisterMessage(&MsgStatMult{})
+	RegisterMessage(&MsgStatMult{}, false)
 }
 
 type MsgStatMult struct {

@@ -8,8 +8,8 @@ import (
 )
 
 func init() {
-	RegisterMessage(&MsgPlayerInput{})
-	RegisterMessage(&MsgMouse{})
+	RegisterMessage(&MsgPlayerInput{}, true)
+	RegisterMessage(&MsgMouse{}, false)
 }
 
 type MsgPlayerInput struct {

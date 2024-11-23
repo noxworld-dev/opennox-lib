@@ -8,7 +8,7 @@ import (
 )
 
 func init() {
-	RegisterMessage(&MsgText{})
+	RegisterMessage(&MsgText{}, true)
 }
 
 const (

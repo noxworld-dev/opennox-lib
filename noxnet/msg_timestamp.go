@@ -7,9 +7,9 @@ import (
 )
 
 func init() {
-	RegisterMessage(&MsgTimestamp{})
-	RegisterMessage(&MsgFullTimestamp{})
-	RegisterMessage(&MsgRateChange{})
+	RegisterMessage(&MsgTimestamp{}, false)
+	RegisterMessage(&MsgFullTimestamp{}, false)
+	RegisterMessage(&MsgRateChange{}, false)
 }
 
 type Timestamp uint32

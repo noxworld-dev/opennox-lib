@@ -2,6 +2,7 @@ package noxnet
 
 import (
 	"errors"
+	"image"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -16,9 +17,10 @@ import (
 
 func TestDecodePacket(t *testing.T) {
 	var cases = []struct {
-		name   string
-		packet Message
-		client bool
+		name    string
+		skip    bool
+		packet  Message
+		packets []Message
 	}{
 		{
 			name: "server info",
@@ -42,7 +44,7 @@ func TestDecodePacket(t *testing.T) {
 		},
 		{
 			name: "server join",
-			packet: &MsgServerJoin{
+			packet: &MsgServerTryJoin{
 				PlayerName: "Игрок",
 				Serial:     "1234567890123456789012",
 				Version:    0x1039a,
@@ -50,26 +52,30 @@ func TestDecodePacket(t *testing.T) {
 		},
 		{
 			name: "server accept",
-			packet: &MsgServerAccept{
-				Unk0:   0x00,
-				Unk1:   0x01,
-				ID:     1,
-				XorKey: 0x9e,
+			packets: []Message{
+				&MsgAccept{
+					ID: 0,
+				},
+				&MsgServerAccept{
+					ID:     1,
+					XorKey: 0x9e,
+				},
 			},
 		},
 		{
-			name:   "client accept",
-			client: true,
-			packet: &MsgClientAccept{
-				Unk0:         1,
-				Unk1:         32,
-				PlayerName:   "Denn",
-				PlayerClass:  1,
-				Unk70:        [29]byte{0x73, 0x4d, 0x22, 0xda, 0x9a, 0x6e, 0xda, 0x9a, 0x6e, 0xda, 0x9a, 0x6e, 0xda, 0x9a, 0x6e, 0x1f, 0x1f, 0x8, 0x17, 0x6, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
-				ScreenWidth:  1024,
-				ScreenHeight: 768,
-				Serial:       "1234567890123456789012",
-				Unk129:       [26]byte{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
+			name: "client accept",
+			packets: []Message{
+				&MsgAccept{
+					ID: 1,
+				},
+				&MsgClientAccept{
+					PlayerName:  "Denn",
+					PlayerClass: 1,
+					Unk70:       [29]byte{0x73, 0x4d, 0x22, 0xda, 0x9a, 0x6e, 0xda, 0x9a, 0x6e, 0xda, 0x9a, 0x6e, 0xda, 0x9a, 0x6e, 0x1f, 0x1f, 0x8, 0x17, 0x6, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
+					Screen:      image.Point{X: 1024, Y: 768},
+					Serial:      "1234567890123456789012",
+					Unk129:      [26]byte{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
+				},
 			},
 		},
 		{
@@ -239,10 +245,35 @@ func TestDecodePacket(t *testing.T) {
 				RecvID: 0,
 			}},
 		},
+		{
+			name: "update stream 21",
+			skip: !decodeUpdateStream,
+			packet: &MsgUpdateStream{
+				ID:  UpdateAlias(1),
+				Pos: image.Point{X: 3592, Y: 3868},
+				Objects: []ObjectUpdate{
+					{ID: UpdateAlias(194), Pos: image.Point{X: 3593, Y: 3868}},
+					{ID: UpdateAlias(64), Pos: image.Point{X: 3592, Y: 3870}},
+					{ID: UpdateAlias(209), Pos: image.Point{X: 3829, Y: 3900}},
+				},
+			},
+		},
+		{
+			name: "update stream 29",
+			skip: !decodeUpdateStream,
+			packet: &MsgUpdateStream{
+				ID:      UpdateAlias(1),
+				Pos:     image.Point{X: 3592, Y: 3868},
+				Objects: []ObjectUpdate{},
+			},
+		},
 	}
 	for _, c := range cases {
 		c := c
 		t.Run(c.name, func(t *testing.T) {
+			if c.skip {
+				t.SkipNow()
+			}
 			fname := filepath.Join("testdata", strings.ReplaceAll(c.name, " ", "_")+".dat")
 			data, err := os.ReadFile(fname)
 			if errors.Is(err, fs.ErrNotExist) {
@@ -252,16 +283,37 @@ func TestDecodePacket(t *testing.T) {
 				must.NoError(t, err)
 			}
 			must.NoError(t, err)
-			p, n, err := DecodeAnyPacket(!c.client, data)
-			must.NoError(t, err)
-			must.Eq(t, c.packet, p)
-			must.EqOp(t, len(data), n)
-			buf, err := AppendPacket(nil, p)
-			must.NoError(t, err)
-			must.Eq(t, data, buf)
-			n, err = DecodePacket(data, p)
-			must.NoError(t, err)
-			must.EqOp(t, len(data), n)
+			if c.packet != nil {
+				p, n, err := DecodeAnyPacket(data)
+				must.NoError(t, err)
+				must.Eq(t, c.packet, p)
+				must.EqOp(t, len(data), n)
+				buf, err := AppendPacket(nil, p)
+				must.NoError(t, err)
+				must.Eq(t, data, buf)
+				n, err = DecodePacket(data, p)
+				must.NoError(t, err)
+				must.EqOp(t, len(data), n)
+			} else if len(c.packets) != 0 {
+				left := data
+				var got []Message
+				for len(left) > 0 {
+					p, n, err := DecodeAnyPacket(left)
+					must.NoError(t, err)
+					left = left[n:]
+					got = append(got, p)
+				}
+				must.Eq(t, c.packets, got)
+				must.EqOp(t, 0, len(left))
+				var buf []byte
+				for _, p := range got {
+					buf, err = AppendPacket(buf, p)
+					must.NoError(t, err)
+				}
+				must.Eq(t, data, buf)
+			} else {
+				t.Skip("no packets")
+			}
 		})
 	}
 }
