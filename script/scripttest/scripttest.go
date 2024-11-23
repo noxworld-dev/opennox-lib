@@ -115,9 +115,9 @@ type testPrinter struct {
 
 func (p testPrinter) Print(text string) {
 	if p.w != nil {
-		fmt.Fprintf(p.w, "%s: %s", p.lvl, text)
+		fmt.Fprintf(p.w, "[%s] %s", p.lvl, text)
 	}
-	p.t.Logf("%s: %s", p.lvl, text)
+	p.t.Logf("[%s] %s", p.lvl, text)
 }
 
 type Game struct {

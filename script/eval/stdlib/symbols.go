@@ -11,10 +11,11 @@ var Symbols = make(map[string]map[string]reflect.Value)
 // We do not import stdlib from yaegi because it will compile ALL stdlib packages, even if we whitelist only a few.
 
 var (
+	_ _context_Context
 	_ _fmt_Formatter
+	_ _image_Image
+	_ _image_color_Color
 	_ _io_Closer
 	_ _math_rand_Source
 	_ _sort_Interface
-	_ _image_color_Color
-	_ _image_Image
 )

@@ -1,12 +1,11 @@
 package script
 
 import (
+	"log/slog"
 	"reflect"
 	"sort"
 
 	"golang.org/x/exp/maps"
-
-	"github.com/noxworld-dev/opennox-lib/log"
 )
 
 // EventType is a type of script events.
@@ -49,15 +48,13 @@ func VMRuntimes() []VMRuntime {
 
 // VMRuntime is a type for registering new script runtime implementations.
 type VMRuntime struct {
-	// Log is the logger for this VM runtime.
-	Log *log.Logger
 	// Name is a short name for the VM runtime. Must be unique.
 	Name string
 	// Title is a human-friendly name for the VM runtime.
 	Title string
 	// NewMap creates a new script VM for map scripts.
 	// If there's no scripts for the map, function may return nil, nil.
-	NewMap func(g Game, maps string, name string) (VM, error)
+	NewMap func(log *slog.Logger, g Game, maps string, name string) (VM, error)
 }
 
 // VM is an interface for a virtual machine running the script engine.

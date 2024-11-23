@@ -3,6 +3,7 @@ package lua
 import (
 	"bytes"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -11,23 +12,17 @@ import (
 	lua "github.com/yuin/gopher-lua"
 
 	"github.com/noxworld-dev/opennox-lib/ifs"
-	"github.com/noxworld-dev/opennox-lib/log"
-
 	"github.com/noxworld-dev/opennox-lib/script"
 	"github.com/noxworld-dev/opennox-lib/script/lua/mapv0"
 )
 
 type vmStop struct{}
 
-var (
-	Log = log.New("lua")
-)
-
 func init() {
 	script.RegisterVM(script.VMRuntime{
-		Name: "lua", Title: "LUA interpreter", Log: Log,
-		NewMap: func(g script.Game, maps string, name string) (script.VM, error) {
-			vm := NewVM(g, filepath.Join(maps, name))
+		Name: "lua", Title: "LUA interpreter",
+		NewMap: func(log *slog.Logger, g script.Game, maps string, name string) (script.VM, error) {
+			vm := NewVM(log, g, filepath.Join(maps, name))
 			err := vm.ExecFile(filepath.Join(maps, name, name+".lua"))
 			if os.IsNotExist(err) {
 				return vm, nil // still run the empty script for commands
@@ -42,6 +37,7 @@ func init() {
 var _ script.VM = (*VM)(nil)
 
 type VM struct {
+	log    *slog.Logger
 	g      script.Game
 	s      *lua.LState
 	dir    string
@@ -50,12 +46,13 @@ type VM struct {
 	pkg    map[string]*lua.LTable
 }
 
-func NewVM(g script.Game, dir string, opts ...lua.Options) *VM {
+func NewVM(log *slog.Logger, g script.Game, dir string, opts ...lua.Options) *VM {
 	opts = append(opts, lua.Options{
 		SkipOpenLibs: true,
 	})
 	vm := &VM{
-		g: g, dir: dir,
+		log: log,
+		g:   g, dir: dir,
 		s:      lua.NewState(opts...),
 		timers: script.NewTimers(g),
 		pkg:    make(map[string]*lua.LTable),
@@ -194,7 +191,7 @@ func (vm *VM) luaPrint(L *lua.LState) int {
 	}
 	vm.buf.WriteString("\n")
 	text := vm.buf.String()
-	Log.Print(strings.TrimSpace(text))
+	vm.log.Info(strings.TrimSpace(text))
 	p.Print(text)
 	return 0
 }
@@ -233,22 +230,22 @@ func (vm *VM) luaRequire(L *lua.LState) int {
 			path = strings.TrimLeft(path, "./\\~")
 			path = filepath.Join(vm.dir, path+".lua")
 			base := filepath.Base(path)
-			Log.Printf("loading script %q", base)
+			vm.log.Info("loading script", "path", base)
 			f, err := ifs.Open(path)
 			if err != nil {
-				Log.Println(err)
+				vm.log.Error("can't open script", "err", err)
 				return vm.Error(L, err)
 			}
 			defer f.Close()
 			fn, err := L.Load(f, base)
 			if err != nil {
-				Log.Println(err)
+				vm.log.Error("can't load script", "err", err)
 				return vm.Error(L, err)
 			}
 			L.Push(fn)
 			err = L.PCall(0, 1, nil)
 			if err != nil {
-				Log.Println(err)
+				vm.log.Error("can't call script", "err", err)
 				return vm.Error(L, err)
 			}
 			ok = true
@@ -259,7 +256,7 @@ func (vm *VM) luaRequire(L *lua.LState) int {
 		L.Push(lua.LNil)
 		return 1
 	}
-	Log.Printf("loaded module %q", name)
+	vm.log.Info("loaded module", "name", name)
 	vm.pkg[name] = t
 	L.Push(t)
 	return 1

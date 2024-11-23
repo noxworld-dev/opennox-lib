@@ -3,6 +3,7 @@ package eval
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/shoenig/test/must"
@@ -26,19 +27,39 @@ func TestScriptDir(t *testing.T) {
 		must.NoError(t, err)
 	}
 
-	writeFile("pkg1/script.go", `
-package pkg1
+	// Map script for "themap"
+	writeFile("maps/themap/script.go", `
+package themap
 
 import (
-	"pkg2"
-	"pkg3"
+	"log/slog"
+
+	"othermap"
+
+	"test.org/vend"
+	"test.org/share"
+	"test.org/themod"
 )
 
 var Cnt int
 
-func init() { println("init one"); Cnt++ }
-func One() { println("one"); pkg2.Two(); pkg3.Three(); Cnt++ }
-func OnFrame() { println("frame"); Cnt++ }
+func init() { 
+	println("init map")
+	Cnt++
+}
+func Do() { 
+	println("call map")
+	slog.Info("call", "src", "map")
+	othermap.Do()
+	vend.Do()
+	share.Do()
+	themod.Do()
+	Cnt++
+}
+func OnFrame() {
+	println("frame")
+	Cnt++
+}
 
 func Panic1() {
 	panic2()
@@ -53,25 +74,45 @@ func panic3() {
 }
 `)
 
-	writeFile("pkg2/script.go", `
-package pkg2
+	// Vendored package "test.org/vend" in "themap"
+	writeFile("maps/themap/vendor/test.org/vend/script.go", `
+package vend
 
-func init() { println("init two") }
-func Two() { println("two") }
+func init() { println("init vendor") }
+func Do() { println("call vendor") }
 `)
 
-	writeFile("pkg1/vendor/pkg3/script.go", `
-package pkg3
+	// Second map script "othermap"
+	writeFile("maps/othermap/script.go", `
+package othermap
 
-func init() { println("init three") }
-func Three() { println("three") }
+func init() { println("init other map") }
+func Do() { println("call other map") }
+`)
+
+	// Shared module "test.org/themod" in mods
+	writeFile("mods/pkg/mod/test.org/themod/script.go", `
+package themod
+
+func init() { println("init module") }
+func Do() { println("call module") }
+`)
+
+	// Legacy way to share package "test.org/share"
+	writeFile("maps/test.org/share/script.go", `
+package share
+
+func init() { println("init shared") }
+func Do() { println("call shared") }
 `)
 	g := &scripttest.Game{T: t}
-	vm := NewVM(g, dir)
-	err = vm.ExecFile("pkg1")
+	vm := NewVM(g, VMOptions{
+		MapsDir: filepath.Join(dir, "maps"),
+	})
+	err = vm.ExecFile("themap")
 	must.NoError(t, err)
 
-	rv, ok := vm.exportByName(`One`)
+	rv, ok := vm.exportByName(`Do`)
 	must.True(t, ok)
 	fnc, ok := rv.Interface().(func())
 	must.True(t, ok)
@@ -91,7 +132,7 @@ func Three() { println("three") }
 	must.True(t, ok)
 	must.EqOp(t, 3, p)
 
-	one, err := script.GetVMSymbol[func()](vm, "One")
+	one, err := script.GetVMSymbol[func()](vm, "Do")
 	must.NoError(t, err)
 	one()
 
@@ -107,21 +148,30 @@ func Three() { println("three") }
 		}()
 		panic1()
 	}()
-	must.EqOp(t, `info: init two
-info: init three
-info: init one
-info: one
-info: two
-info: three
-info: builtin
-info: fmt
-info: frame
-info: one
-info: two
-info: three
-error: /src/pkg1/script.go:24:2: panic: pkg1.panic3(...)
-error: /src/pkg1/script.go:20:3: panic: pkg1.panic2.func(...)
-error: /src/pkg1/script.go:19:2: panic: pkg1.panic2.func(...)
-error: /src/pkg1/script.go:16:2: panic: pkg1.Panic1(...)
-`, g.Log.String())
+	must.EqOp(t, strings.TrimSpace(`
+[info] init other map
+[info] init vendor
+[info] init shared
+[info] init module
+[info] init map
+[info] call map
+[error] level=INFO msg=call src=map
+[info] call other map
+[info] call vendor
+[info] call shared
+[info] call module
+[info] builtin
+[info] fmt
+[info] frame
+[info] call map
+[error] level=INFO msg=call src=map
+[info] call other map
+[info] call vendor
+[info] call shared
+[info] call module
+[error] /src/themap/script.go:43:2: panic: themap.panic3(...)
+[error] /src/themap/script.go:39:3: panic: themap.panic2.func(...)
+[error] /src/themap/script.go:38:2: panic: themap.panic2.func(...)
+[error] /src/themap/script.go:35:2: panic: themap.Panic1(...)
+`), strings.TrimSpace(g.Log.String()))
 }

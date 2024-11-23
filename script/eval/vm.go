@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 
@@ -16,14 +18,9 @@ import (
 	ns4 "github.com/noxworld-dev/noxscript/ns/v4"
 	nseval4 "github.com/noxworld-dev/noxscript/ns/v4/eval"
 
-	"github.com/noxworld-dev/opennox-lib/log"
 	"github.com/noxworld-dev/opennox-lib/script"
 	"github.com/noxworld-dev/opennox-lib/script/eval/imports"
 	"github.com/noxworld-dev/opennox-lib/script/eval/stdlib"
-)
-
-var (
-	Log = log.New("eval")
 )
 
 var useSymbols []Exports
@@ -40,29 +37,31 @@ func Register(m Exports) {
 
 func init() {
 	script.RegisterVM(script.VMRuntime{
-		Name: "eval", Title: "Go interpreter", Log: Log,
-		NewMap: func(g script.Game, maps string, name string) (script.VM, error) {
-			vm := NewVM(g, maps)
+		Name: "eval", Title: "Go interpreter",
+		NewMap: func(log *slog.Logger, g script.Game, maps string, name string) (script.VM, error) {
+			vm := NewVM(g, VMOptions{
+				Log:     log,
+				MapsDir: maps,
+			})
 			err := vm.ExecFile(name)
 			if os.IsNotExist(err) {
-				Log.Println("no go files")
+				log.Warn("no go files")
 				return vm, nil // still run the empty script for commands
 			} else if err != nil {
 				return nil, err
 			}
-			Log.Println("go scripts loaded")
+			log.Info("go scripts loaded")
 			return vm, nil
 		},
 	})
 }
 
-type printer struct {
-	vm  *VM
+type scriptPrinter struct {
 	buf bytes.Buffer
 	p   script.Printer
 }
 
-func (p *printer) Write(data []byte) (int, error) {
+func (p *scriptPrinter) Write(data []byte) (int, error) {
 	p.buf.Write(data)
 	for p.buf.Len() > 0 {
 		data := p.buf.Bytes()
@@ -78,8 +77,11 @@ func (p *printer) Write(data []byte) (int, error) {
 var _ script.VM = (*VM)(nil)
 
 type VM struct {
+	log      *slog.Logger
+	sclog    *slog.Logger
+	fs       FS
 	vm       *interp.Interpreter
-	printers []*printer
+	printers []*scriptPrinter
 	defs     bool
 
 	curExports map[string]reflect.Value
@@ -89,26 +91,58 @@ type VM struct {
 	onEventStr func(typ string)
 }
 
-func NewVM(g script.Game, dir string) *VM {
-	stdout := &printer{p: g.Console(false)}
-	stderr := &printer{p: g.Console(true)}
-	vm := &VM{vm: interp.New(interp.Options{
+type VMOptions struct {
+	Log       *slog.Logger
+	ScriptLog *slog.Logger
+	MapsDir   string
+	ModsDir   string
+}
+
+func NewVM(g script.Game, opts VMOptions) *VM {
+	log := opts.Log
+	if log == nil {
+		log = slog.Default()
+	}
+	mapsDir := opts.MapsDir
+	modsDir := opts.ModsDir
+	if modsDir == "" {
+		modsDir = filepath.Join(mapsDir, "..", "mods", "pkg", "mod") // follows go mod structure for /mods/
+	}
+	stdout := &scriptPrinter{p: g.Console(false)}
+	stderr := &scriptPrinter{p: g.Console(true)}
+	sclog := opts.ScriptLog
+	if sclog == nil {
+		sclog = slog.New(slog.NewTextHandler(stderr, &slog.HandlerOptions{
+			ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
+				switch a.Key {
+				case "time":
+					return slog.Attr{}
+				}
+				return a
+			},
+		}))
+	}
+	vm := &VM{
+		log:   log,
+		sclog: sclog,
+		fs:    newModFS(log, mapsDir, modsDir),
+	}
+	vm.vm = interp.New(interp.Options{
 		GoPath:               gopath,
 		BuildTags:            []string{"script"},
 		Stdin:                bytes.NewReader(nil),
 		Stdout:               stdout,
 		Stderr:               stderr,
 		Args:                 []string{},
-		SourcecodeFilesystem: &modFS{root: dir},
-	})}
+		SourcecodeFilesystem: vm.fs,
+	})
 	vm.addPrinters(stdout, stderr)
 	vm.initPackages(g)
 	return vm
 }
 
-func (vm *VM) addPrinters(list ...*printer) {
+func (vm *VM) addPrinters(list ...*scriptPrinter) {
 	for _, p := range list {
-		p.vm = vm
 		vm.printers = append(vm.printers, p)
 	}
 }
@@ -149,9 +183,73 @@ func (vm *VM) initPackages(g script.Game) {
 			ctx = m.Context(ctx, g)
 		}
 	}
+	// These strange assignments below statically check that types of the function and override are exactly the same.
+	slogDefault := slog.Default
+	slogWith := slog.With
+	slogLog := slog.Log
+	slogLogAttrs := slog.LogAttrs
+	slogDebug := slog.Debug
+	slogInfo := slog.Info
+	slogWarn := slog.Warn
+	slogError := slog.Error
+	slogDebugContext := slog.DebugContext
+	slogInfoContext := slog.InfoContext
+	slogWarnContext := slog.WarnContext
+	slogErrorContext := slog.ErrorContext
+	slogDefault = func() *slog.Logger {
+		return vm.sclog
+	}
+	slogWith = func(args ...any) *slog.Logger {
+		return vm.sclog.With(args...)
+	}
+	slogLog = func(ctx context.Context, level slog.Level, msg string, args ...any) {
+		vm.sclog.Log(ctx, level, msg, args...)
+	}
+	slogLogAttrs = func(ctx context.Context, level slog.Level, msg string, attrs ...slog.Attr) {
+		vm.sclog.LogAttrs(ctx, level, msg, attrs...)
+	}
+	slogDebug = func(msg string, args ...any) {
+		vm.sclog.Debug(msg, args...)
+	}
+	slogInfo = func(msg string, args ...any) {
+		vm.sclog.Info(msg, args...)
+	}
+	slogWarn = func(msg string, args ...any) {
+		vm.sclog.Warn(msg, args...)
+	}
+	slogError = func(msg string, args ...any) {
+		vm.sclog.Error(msg, args...)
+	}
+	slogDebugContext = func(ctx context.Context, msg string, args ...any) {
+		vm.sclog.DebugContext(ctx, msg, args...)
+	}
+	slogInfoContext = func(ctx context.Context, msg string, args ...any) {
+		vm.sclog.InfoContext(ctx, msg, args...)
+	}
+	slogWarnContext = func(ctx context.Context, msg string, args ...any) {
+		vm.sclog.WarnContext(ctx, msg, args...)
+	}
+	slogErrorContext = func(ctx context.Context, msg string, args ...any) {
+		vm.sclog.ErrorContext(ctx, msg, args...)
+	}
+	vm.vm.Use(interp.Exports{
+		importPathFor((*slog.Logger)(nil)) + "/slog": {
+			"Default":      reflect.ValueOf(slogDefault),
+			"With":         reflect.ValueOf(slogWith),
+			"Log":          reflect.ValueOf(slogLog),
+			"LogAttrs":     reflect.ValueOf(slogLogAttrs),
+			"Debug":        reflect.ValueOf(slogDebug),
+			"Info":         reflect.ValueOf(slogInfo),
+			"Warn":         reflect.ValueOf(slogWarn),
+			"Error":        reflect.ValueOf(slogError),
+			"DebugContext": reflect.ValueOf(slogDebugContext),
+			"InfoContext":  reflect.ValueOf(slogInfoContext),
+			"WarnContext":  reflect.ValueOf(slogWarnContext),
+			"ErrorContext": reflect.ValueOf(slogErrorContext),
+		},
+	})
 
 	// Rename map entry below when refactoring!
-	// These strange assignments below statically check that types of the function and override are exactly the same.
 	getGame := script.Runtime
 	getGame = func() script.Game {
 		return g
@@ -238,16 +336,18 @@ func (vm *VM) Exec(s string) (reflect.Value, error) {
 func (vm *VM) ExecFile(pkg string) error {
 	defer vm.checkExports()
 	defer vm.flushPrinters()
+	log := vm.log.With("pkg", pkg)
 	_, err := vm.vm.EvalPath(pkg)
 	if err != nil {
 		if strings.Contains(err.Error(), "no Go files") {
 			return os.ErrNotExist
 		}
+		log.Error("cannot load package", "err", err)
 		return err
 	}
 	vm.curExports = vm.vm.Symbols(pkg)[pkg]
 	if len(vm.curExports) == 0 {
-		Log.Println("no exports from go; wrong package name?")
+		log.Warn("no exports from go; wrong package name?")
 	}
 	return nil
 }
