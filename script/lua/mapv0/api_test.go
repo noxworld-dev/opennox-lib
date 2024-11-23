@@ -15,7 +15,7 @@ import (
 
 func newGame(t testing.TB) *testGame {
 	g := &testGame{t: t, frame: 1, time: time.Second}
-	lvm := lua.NewVM(g, "", glua.Options{
+	lvm := lua.NewVM(nil, g, "", glua.Options{
 		IncludeGoStackTrace: true,
 	})
 	lvm.InitAPI("Nox", mapv0.New)

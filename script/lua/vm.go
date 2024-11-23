@@ -47,6 +47,9 @@ type VM struct {
 }
 
 func NewVM(log *slog.Logger, g script.Game, dir string, opts ...lua.Options) *VM {
+	if log == nil {
+		log = slog.Default()
+	}
 	opts = append(opts, lua.Options{
 		SkipOpenLibs: true,
 	})

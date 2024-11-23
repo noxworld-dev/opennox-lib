@@ -7,7 +7,7 @@ import (
 )
 
 func TestLUA(t *testing.T) {
-	vm := NewVM(&scripttest.Game{T: t}, "")
+	vm := NewVM(nil, &scripttest.Game{T: t}, "")
 	_, err := vm.Exec(`
 Nox = require("Nox.Map.Script.v0")
 print(Nox)
